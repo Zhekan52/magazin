@@ -134,7 +134,7 @@ export default function POS() {
           {error && <p className="text-red-500 font-medium mt-4 animate-pulse">{error}</p>}
         </div>
 
-        {activeOrder && order?.status === 'in_transit' && !order.items.every(i => i.fulfillmentStatus === 'accepted') && (
+        {activeOrder && order?.status === 'in_transit' && !order.items.some(i => i.fulfillmentStatus === 'accepted') && (
           <div className="flex-1 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-[2rem] border-2 border-yellow-200 shadow-lg flex flex-col items-center justify-center p-8 text-center gap-4">
             <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center shadow-lg">
               <Truck className="w-10 h-10 text-yellow-600" />
@@ -145,8 +145,9 @@ export default function POS() {
         )}
 
         {activeOrder && (
-          (order?.status === 'in_transit' && order.items.every(i => i.fulfillmentStatus === 'accepted')) ||
-          order?.status === 'arrived'
+          (order?.status === 'in_transit' && order.items.some(i => i.fulfillmentStatus === 'accepted')) ||
+          order?.status === 'arrived' ||
+          order?.status === 'issued'
         ) && (
           <div className="bg-white rounded-[2rem] p-8 border border-[#F0F0F0] shadow-lg shadow-gray-200/50 flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between mb-6 pb-6 border-b-2 border-dashed border-[#E8E8E8]">
@@ -281,7 +282,7 @@ export default function POS() {
           Оплата наличными
         </h3>
 
-        {activeOrder && order?.status !== 'in_transit' && order?.status !== 'rejected' && order?.status !== 'returned' ? (
+        {activeOrder && (order?.status === 'arrived' || order?.status === 'issued') ? (
           <>
             <div className="flex-1 relative z-10">
               <div className="bg-gradient-to-br from-white/10 to-white/5 p-8 rounded-3xl mb-6 border border-white/10">
