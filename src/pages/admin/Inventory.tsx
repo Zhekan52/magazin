@@ -10,34 +10,50 @@ export default function Inventory() {
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newSize, setNewSize] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 800;
-          const MAX_HEIGHT = 800;
-          let width = img.width;
-          let height = img.height;
-          if (width > height) {
-            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-          } else {
-            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
-          setIsEditingProduct({ ...isEditingProduct, image: canvas.toDataURL('image/jpeg', 0.8) });
-        };
-        img.src = reader.result as string;
+  const handleImageUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+        } else {
+          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        setIsEditingProduct({ ...isEditingProduct, image: canvas.toDataURL('image/jpeg', 0.8) });
       };
-      reader.readAsDataURL(file);
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      handleImageUpload(file);
     }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
   };
 
   const addSize = () => {
@@ -155,12 +171,24 @@ export default function Inventory() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Фото</label>
-                <div className="w-full h-40 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
-                  {isEditingProduct?.image ? <img src={isEditingProduct.image} className="w-full h-full object-cover" /> : <ImageIcon className="w-12 h-12 text-gray-300" />}
+                <div 
+                  className={`w-full h-40 rounded-2xl flex items-center justify-center overflow-hidden transition-all ${isDragging ? 'border-2 border-dashed border-blue-500 bg-blue-50' : 'bg-gray-100'}`}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                >
+                  {isEditingProduct?.image ? (
+                    <img src={isEditingProduct.image} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center text-gray-400">
+                      <Upload className="w-8 h-8 mx-auto mb-2" />
+                      <p className="text-sm">Перетащите файл сюда</p>
+                    </div>
+                  )}
                 </div>
                 <label className="flex items-center justify-center gap-2 mt-2 text-sm text-blue-500 cursor-pointer">
                   <Upload className="w-4 h-4" /> Загрузить фото
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                  <input type="file" accept="image/*" onChange={e => e.target.files?.[0] && handleImageUpload(e.target.files[0])} className="hidden" />
                 </label>
               </div>
               <input value={isEditingProduct?.name || ''} onChange={e => setIsEditingProduct({ ...isEditingProduct, name: e.target.value })} placeholder="Название" className="w-full border p-3 rounded-xl" />
