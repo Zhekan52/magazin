@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../../store';
-import { Package, Truck, CheckCircle, Archive, Calendar, Check, X } from 'lucide-react';
+import { Package, Truck, CheckCircle, Archive, Calendar } from 'lucide-react';
 
 export default function Dashboard() {
   const { orders, updateOrderStatus, updateOrderItemFulfillment } = useStore();
@@ -191,13 +191,9 @@ export default function Dashboard() {
                 <p className="text-xs text-gray-400">{new Date(order.createdAt).toLocaleString('ru-RU')}</p>
               </div>
               <div className={`p-2 rounded-full ${
-                order.status === 'in_transit' && !order.items.some(i => i.fulfillmentStatus === 'accepted') 
-                  ? 'bg-blue-50 text-blue-500' 
-                  : 'bg-green-50 text-green-500'
+                order.status === 'in_transit' ? 'bg-blue-50 text-blue-500' : 'bg-green-50 text-green-500'
               }`}>
-                {order.status === 'in_transit' && !order.items.some(i => i.fulfillmentStatus === 'accepted')
-                  ? <Truck className="w-6 h-6" /> 
-                  : <CheckCircle className="w-6 h-6" />}
+                {order.status === 'in_transit' ? <Truck className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
               </div>
             </div>
 
@@ -206,21 +202,8 @@ export default function Dashboard() {
                 const hasDiscount = item.product.discount && item.product.discount > 0 && 
                   (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
                 const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
-                const isAccepted = item.fulfillmentStatus === 'accepted';
                 return (
-                <div key={idx} className={`flex gap-3 items-center p-2 rounded-lg ${isAccepted ? 'bg-green-50' : 'bg-gray-50'}`}>
-                  <button
-                    type="button"
-                    onClick={() => updateOrderItemFulfillment(order.id, idx, isAccepted ? 'returned' : 'accepted')}
-                    disabled={order.status !== 'in_transit'}
-                    className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                      isAccepted 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-gray-200 text-gray-400'
-                    } ${order.status === 'in_transit' ? 'hover:bg-gray-300' : 'opacity-50'}`}
-                  >
-                    <Check className="w-3 h-3" />
-                  </button>
+                <div key={idx} className="flex gap-3 items-center p-2 rounded-lg bg-gray-50">
                   <div className="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                     {item.product.image && (
                       <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
@@ -252,7 +235,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {order.status === 'in_transit' && !order.items.every(i => i.fulfillmentStatus === 'accepted') && (
+            {order.status === 'in_transit' && (
               <button
                 onClick={() => {
                   order.items.forEach((_, idx) => {
@@ -262,7 +245,7 @@ export default function Dashboard() {
                 }}
                 className="w-full py-3 rounded-xl font-bold bg-blue-500 text-white hover:bg-blue-600 transition-colors"
               >
-                Принять
+                Принять все
               </button>
             )}
           </div>

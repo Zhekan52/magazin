@@ -152,15 +152,8 @@ export default function Tracking() {
           </div>
 
           <div className="space-y-4 mb-8 max-h-[40vh] overflow-y-auto pr-2">
-            {searchedOrder.items.map((item, idx) => {
-              const isAccepted = item.fulfillmentStatus === 'accepted';
-              const isPending = !item.fulfillmentStatus;
-              return (
-              <div key={idx} className={`flex gap-4 items-center p-4 rounded-2xl border ${
-                isAccepted ? 'bg-green-50 border-green-200' :
-                isPending && searchedOrder.status === 'arrived' ? 'bg-gray-50 border-[#F0F0F0] opacity-60' :
-                'bg-gray-50/50 border-[#F0F0F0]'
-              }`}>
+            {searchedOrder.items.map((item, idx) => (
+              <div key={idx} className="flex gap-4 items-center p-4 rounded-2xl border bg-gray-50/50 border-[#F0F0F0]">
                 <div className="w-16 h-16 bg-white rounded-xl overflow-hidden shrink-0 border border-[#F0F0F0]">
                   {item.product.image ? (
                      <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
@@ -174,21 +167,12 @@ export default function Tracking() {
                     {item.quantity} шт. × {item.product.price} ₽
                     {item.selectedSize && <span className="ml-2 bg-[#2D3436]/10 px-2 py-0.5 rounded text-xs">Размер: {item.selectedSize}</span>}
                   </div>
-                  <div className={`text-xs mt-1 font-medium ${
-                    isAccepted ? 'text-green-600' : 'text-gray-400'
-                  }`}>
-                    {isAccepted 
-                      ? '✓ Принят' 
-                      : `⏳ В пути (${searchedOrder.items.length - searchedOrder.items.filter(i => i.fulfillmentStatus === 'accepted').length} ед.)`
-                    }
-                  </div>
                 </div>
                 <div className="font-bold text-lg">
                   {item.product.price * item.quantity} ₽
                 </div>
               </div>
-              );
-            })}
+            ))}
           </div>
 
           <div className="flex justify-between items-center pt-6 border-t border-[#F0F0F0]">

@@ -1,24 +1,48 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store';
-import { CheckCircle2, ChevronLeft } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, Tag, X } from 'lucide-react';
 
 export default function Checkout() {
-  const { cart, addOrder, clearCart } = useStore();
+  const { cart, addOrder, clearCart, applyPromoCode, removePromoCode, appliedPromoCode } = useStore();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [successCode, setSuccessCode] = useState<string | null>(null);
+  const [promoInput, setPromoInput] = useState('');
+  const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState('');
 
   const getItemPrice = (item: typeof cart[0]) => {
     const hasDiscount = item.product.discount && item.product.discount > 0 && (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
     return hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
   };
 
-  const total = cart.reduce((sum, item) => {
+  const subtotal = cart.reduce((sum, item) => {
     const hasDiscount = item.product.discount && item.product.discount > 0 && (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
     const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
     return sum + price * item.quantity;
   }, 0);
+
+  const promoDiscount = appliedPromoCode ? (subtotal * appliedPromoCode.discount / 100) : 0;
+  const total = subtotal - promoDiscount;
+
+  const handleApplyPromo = () => {
+    setPromoError('');
+    setPromoSuccess('');
+    if (!promoInput.trim()) return;
+    const result = applyPromoCode(promoInput);
+    if (result.success) {
+      setPromoSuccess(result.message);
+    } else {
+      setPromoError(result.message);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    removePromoCode();
+    setPromoInput('');
+    setPromoSuccess('');
+  };
 
   const handleCheckout = () => {
     setIsProcessing(true);
@@ -86,6 +110,45 @@ export default function Checkout() {
       <h1 className="text-3xl font-bold mb-8">Оформление заказа</h1>
 
       <div className="grid grid-cols-1 gap-8">
+        {/* Promo Code */}
+        <div className="bg-white p-6 rounded-3xl border border-[#F0F0F0] shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <Tag className="w-5 h-5 text-gray-400" />
+            <h2 className="text-lg font-bold">Промокод</h2>
+          </div>
+          
+          {appliedPromoCode ? (
+            <div className="flex items-center justify-between bg-green-50 p-4 rounded-xl">
+              <div>
+                <span className="font-bold text-green-600">{appliedPromoCode.code}</span>
+                <span className="text-green-600 ml-2">-{appliedPromoCode.discount}%</span>
+              </div>
+              <button onClick={handleRemovePromo} className="p-2 hover:bg-green-100 rounded-lg">
+                <X className="w-4 h-4 text-green-600" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={promoInput}
+                onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                placeholder="Введите промокод"
+                className="flex-1 bg-gray-50 border border-[#F0F0F0] rounded-xl py-3 px-4 outline-none focus:border-[#2D3436]"
+              />
+              <button
+                onClick={handleApplyPromo}
+                disabled={!promoInput.trim()}
+                className="bg-[#2D3436] text-white px-6 rounded-xl font-bold hover:bg-black disabled:opacity-50"
+              >
+                Применить
+              </button>
+            </div>
+          )}
+          {promoError && <p className="text-red-500 text-sm mt-2">{promoError}</p>}
+          {promoSuccess && <p className="text-green-600 text-sm mt-2">{promoSuccess}</p>}
+        </div>
+
         {/* Summary */}
         <div className="bg-white p-8 rounded-3xl border border-[#F0F0F0] shadow-sm flex flex-col h-fit">
           <h2 className="text-xl font-bold mb-6">Ваш заказ</h2>
@@ -116,8 +179,14 @@ export default function Checkout() {
           <div className="border-t border-[#F0F0F0] pt-6 mb-6">
             <div className="flex justify-between items-center mb-2 text-gray-500">
               <span>Товары ({cart.length})</span>
-              <span>{total} ₽</span>
+              <span>{subtotal} ₽</span>
             </div>
+            {promoDiscount > 0 && (
+              <div className="flex justify-between items-center mb-2 text-green-600">
+                <span>Скидка по промокоду</span>
+                <span>-{promoDiscount} ₽</span>
+              </div>
+            )}
             <div className="flex justify-between items-center text-xl font-bold mt-4">
               <span>Итого к оплате</span>
               <span>{total} ₽</span>

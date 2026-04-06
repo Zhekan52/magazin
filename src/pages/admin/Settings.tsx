@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useStore } from '../../store';
-import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, LogOut, Trash2, DoorClosed, DoorOpen, X, Tag, Package, FileText } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, LogOut, Trash2, DoorClosed, DoorOpen, X, Tag, Package, FileText, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Settings() {
-  const { adminPassword, setAdminPassword, logoutAdmin, resetAllData, orders, storeClosed, storeClosedReason, setStoreClosed, openingBanner, setOpeningBanner } = useStore();
+  const { adminPassword, setAdminPassword, logoutAdmin, resetAllData, orders, storeClosed, storeClosedReason, setStoreClosed, openingBanner, setOpeningBanner, promoCodes, addPromoCode, deletePromoCode } = useStore();
   const navigate = useNavigate();
   
   const [currentPassword, setCurrentPassword] = useState('');
@@ -16,6 +16,25 @@ export default function Settings() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [closeReason, setCloseReason] = useState(storeClosedReason);
   const [resetOptions, setResetOptions] = useState({ products: false, orders: false });
+  
+  // Promo code form
+  const [newPromoCode, setNewPromoCode] = useState('');
+  const [newPromoDiscount, setNewPromoDiscount] = useState(10);
+  const [newPromoMaxUses, setNewPromoMaxUses] = useState(100);
+  const [newPromoExpires, setNewPromoExpires] = useState('');
+
+  const handleAddPromo = () => {
+    if (!newPromoCode.trim()) return;
+    addPromoCode({
+      code: newPromoCode.toUpperCase(),
+      discount: newPromoDiscount,
+      maxUses: newPromoMaxUses || undefined,
+      expiresAt: newPromoExpires ? new Date(newPromoExpires).getTime() : undefined,
+      usedCount: 0,
+    });
+    setNewPromoCode('');
+    setNewPromoDiscount(10);
+  };
 
   const handleReset = () => {
     if (resetOptions.products) {
@@ -296,6 +315,89 @@ export default function Settings() {
               Сбросить данные
             </button>
           )}
+        </div>
+
+        {/* Промокоды */}
+        <div className="bg-white p-6 rounded-3xl border border-[#F0F0F0] shadow-sm">
+          <div className="flex items-center gap-2 mb-6">
+            <Tag className="w-5 h-5" />
+            <h2 className="text-xl font-bold">Промокоды</h2>
+          </div>
+          
+          <div className="space-y-4 mb-6">
+            {promoCodes.map(promo => (
+              <div key={promo.code} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div>
+                  <span className="font-bold">{promo.code}</span>
+                  <span className="ml-2 text-green-600">-{promo.discount}%</span>
+                  <span className="ml-2 text-gray-400 text-sm">
+                    ({promo.usedCount}{promo.maxUses ? `/${promo.maxUses}` : '∞'}) 
+                    {promo.expiresAt && ` до ${new Date(promo.expiresAt).toLocaleDateString('ru-RU')}`}
+                  </span>
+                </div>
+                <button
+                  onClick={() => deletePromoCode(promo.code)}
+                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            
+            {promoCodes.length === 0 && (
+              <p className="text-gray-400 text-center py-4">Нет промокодов</p>
+            )}
+          </div>
+
+          <div className="space-y-3 p-4 bg-gray-50 rounded-xl">
+            <input
+              type="text"
+              value={newPromoCode}
+              onChange={(e) => setNewPromoCode(e.target.value.toUpperCase())}
+              placeholder="Код (например: SAVE10)"
+              className="w-full bg-white border border-[#F0F0F0] rounded-xl py-3 px-4 outline-none focus:border-[#2D3436]"
+            />
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="text-xs text-gray-500">Скидка %</label>
+                <input
+                  type="number"
+                  value={newPromoDiscount}
+                  onChange={(e) => setNewPromoDiscount(Number(e.target.value))}
+                  min={1}
+                  max={100}
+                  className="w-full bg-white border border-[#F0F0F0] rounded-xl py-2 px-3 outline-none focus:border-[#2D3436]"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs text-gray-500">Лимит использований</label>
+                <input
+                  type="number"
+                  value={newPromoMaxUses}
+                  onChange={(e) => setNewPromoMaxUses(Number(e.target.value))}
+                  min={1}
+                  className="w-full bg-white border border-[#F0F0F0] rounded-xl py-2 px-3 outline-none focus:border-[#2D3436]"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs text-gray-500">Истекает</label>
+                <input
+                  type="date"
+                  value={newPromoExpires}
+                  onChange={(e) => setNewPromoExpires(e.target.value)}
+                  className="w-full bg-white border border-[#F0F0F0] rounded-xl py-2 px-3 outline-none focus:border-[#2D3436]"
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleAddPromo}
+              disabled={!newPromoCode.trim()}
+              className="w-full bg-[#2D3436] text-white py-3 rounded-xl font-bold hover:bg-black disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Добавить промокод
+            </button>
+          </div>
         </div>
       </div>
     </div>

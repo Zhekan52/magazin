@@ -44,6 +44,14 @@ export type Product = {
   discountEndDate?: number;
 };
 
+export type PromoCode = {
+  code: string;
+  discount: number;
+  expiresAt?: number;
+  maxUses?: number;
+  usedCount: number;
+};
+
 interface AppStateData {
   adminPassword: string;
   isAdminAuthenticated: boolean;
@@ -55,6 +63,8 @@ interface AppStateData {
   storeClosed: boolean;
   storeClosedReason: string;
   openingBanner: boolean;
+  promoCodes: PromoCode[];
+  appliedPromoCode?: string;
 }
 
 interface AppState extends AppStateData {
@@ -75,6 +85,11 @@ interface AppState extends AppStateData {
   addProduct: (product: Product) => void;
   updateProduct: (id: string, product: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
+  
+  addPromoCode: (promoCode: PromoCode) => void;
+  deletePromoCode: (code: string) => void;
+  applyPromoCode: (code: string) => { success: boolean; message: string; discount: number };
+  removePromoCode: () => void;
   
   addOrder: (order: Omit<Order, 'id' | 'createdAt'>) => string;
   updateOrderStatus: (id: string, status: OrderStatus) => void;
@@ -127,6 +142,8 @@ export const useStore = create<AppState>()(
       storeClosed: false,
       storeClosedReason: '',
       openingBanner: true,
+      promoCodes: [],
+      appliedPromoCode: undefined,
       
       syncToFirebase: async () => {
         const state = get();
@@ -145,6 +162,7 @@ export const useStore = create<AppState>()(
             storeClosed: state.storeClosed,
             storeClosedReason: state.storeClosedReason,
             openingBanner: state.openingBanner,
+            promoCodes: state.promoCodes,
             cart: [],
           };
           await setDoc(doc(db, DATA_DOC, 'main'), { ...dataToSave, updatedAt: Date.now() });
@@ -168,6 +186,7 @@ export const useStore = create<AppState>()(
               storeClosed: data.storeClosed || false,
               storeClosedReason: data.storeClosedReason || '',
               openingBanner: data.openingBanner ?? true,
+              promoCodes: data.promoCodes || [],
             });
             console.log('✅ Loaded from Firebase');
           } else {
@@ -253,6 +272,27 @@ export const useStore = create<AppState>()(
         get().syncToFirebase();
       },
       
+      addPromoCode: (promoCode) => {
+        set((state) => ({ promoCodes: [...state.promoCodes, { ...promoCode, usedCount: 0 }] }));
+        get().syncToFirebase();
+      },
+      deletePromoCode: (code) => {
+        set((state) => ({ promoCodes: state.promoCodes.filter((p) => p.code !== code) }));
+        get().syncToFirebase();
+      },
+      applyPromoCode: (code) => {
+        const state = useStore.getState();
+        const promo = state.promoCodes.find(p => p.code === code.toUpperCase());
+        if (!promo) return { success: false, message: 'Промокод не найден', discount: 0 };
+        if (promo.expiresAt && promo.expiresAt < Date.now()) return { success: false, message: 'Срок действия истек', discount: 0 };
+        if (promo.maxUses && promo.usedCount >= promo.maxUses) return { success: false, message: 'Лимит использований исчерпан', discount: 0 };
+        set({ appliedPromoCode: code.toUpperCase() });
+        return { success: true, message: `Применен! -${promo.discount}%`, discount: promo.discount };
+      },
+      removePromoCode: () => {
+        set({ appliedPromoCode: undefined });
+      },
+      
       addOrder: (orderData) => {
         const state = useStore.getState();
         
@@ -271,10 +311,22 @@ export const useStore = create<AppState>()(
           code: orderData.code || code,
           createdAt: Date.now(),
         };
-        set((state) => ({ 
-          orders: [...state.orders, order],
-          usedCodes: [...state.usedCodes, orderData.code || code]
-        }));
+        
+        if (state.appliedPromoCode) {
+          set((state) => ({ 
+            orders: [...state.orders, order],
+            usedCodes: [...state.usedCodes, orderData.code || code],
+            promoCodes: state.promoCodes.map(p => 
+              p.code === state.appliedPromoCode ? { ...p, usedCount: p.usedCount + 1 } : p
+            ),
+            appliedPromoCode: undefined,
+          }));
+        } else {
+          set((state) => ({ 
+            orders: [...state.orders, order],
+            usedCodes: [...state.usedCodes, orderData.code || code]
+          }));
+        }
         get().syncToFirebase();
         return { id, code: orderData.code || code };
       },
