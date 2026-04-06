@@ -78,10 +78,6 @@ export default function AdminLogin() {
             {isLoading ? 'Проверка...' : 'Войти'}
           </button>
         </form>
-
-        <p className="text-center text-gray-400 text-sm mt-6">
-          Пароль по умолчанию: 1234
-        </p>
       </div>
     </div>
   );

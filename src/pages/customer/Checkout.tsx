@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store';
-import { CheckCircle2, ChevronLeft, MapPin, Clock, Banknote } from 'lucide-react';
+import { CheckCircle2, ChevronLeft } from 'lucide-react';
 
 export default function Checkout() {
   const { cart, addOrder, clearCart } = useStore();
@@ -88,40 +88,7 @@ export default function Checkout() {
 
       <h1 className="text-3xl font-bold mb-8">Оформление заказа</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Info */}
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-3xl border border-[#F0F0F0] shadow-sm flex items-start gap-4">
-            <div className="bg-blue-50 p-3 rounded-2xl text-blue-600">
-              <MapPin className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold mb-1">Самовывоз</h3>
-              <p className="text-gray-500 text-sm">Главный магазин, ул. Примерная 1</p>
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-3xl border border-[#F0F0F0] shadow-sm flex items-start gap-4">
-            <div className="bg-amber-50 p-3 rounded-2xl text-amber-600">
-              <Clock className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold mb-1">Время готовности</h3>
-              <p className="text-gray-500 text-sm">~ 15-20 минут</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border border-[#F0F0F0] shadow-sm flex items-start gap-4">
-            <div className="bg-green-50 p-3 rounded-2xl text-green-600">
-              <Banknote className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold mb-1">Оплата</h3>
-              <p className="text-gray-500 text-sm">Наличными при получении (Cash on Pickup)</p>
-            </div>
-          </div>
-        </div>
-
+      <div className="grid grid-cols-1 gap-8">
         {/* Summary */}
         <div className="bg-white p-8 rounded-3xl border border-[#F0F0F0] shadow-sm flex flex-col h-fit">
           <h2 className="text-xl font-bold mb-6">Ваш заказ</h2>
