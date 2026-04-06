@@ -218,24 +218,10 @@ export default function Dashboard() {
             })}
             </div>
 
-            {order.status === 'in_transit' && (
-              <button
-                onClick={() => {
-                  order.items.forEach((_, idx) => {
-                    updateOrderItemFulfillment(order.id, idx, 'accepted');
-                  });
-                  updateOrderStatus(order.id, 'arrived');
-                }}
-                className="w-full py-3 rounded-xl font-bold bg-blue-500 text-white hover:bg-blue-600 transition-colors mb-4"
-              >
-                Принять все
-              </button>
-            )}
-
             <div className="mt-auto">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-4">
                 <span className="text-sm text-gray-500">К оплате</span>
-                <span className="text-2xl font-black bg-gradient-to-r from-[#2D3436] to-[#1a1f21] bg-clip-text text-transparent">
+                <span className="text-2xl font-black">
                   {(() => {
                     const total = order.items.reduce((sum, item) => {
                       const hasDiscount = item.product.discount && item.product.discount > 0 && 
@@ -247,6 +233,20 @@ export default function Dashboard() {
                   })()} ₽
                 </span>
               </div>
+
+              {order.status === 'in_transit' && (
+                <button
+                  onClick={() => {
+                    order.items.forEach((_, idx) => {
+                      updateOrderItemFulfillment(order.id, idx, 'accepted');
+                    });
+                    updateOrderStatus(order.id, 'arrived');
+                  }}
+                  className="w-full py-3 rounded-xl font-bold bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                >
+                  Принять все
+                </button>
+              )}
             </div>
           </div>
         ))}
