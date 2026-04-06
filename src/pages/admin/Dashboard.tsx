@@ -202,8 +202,24 @@ export default function Dashboard() {
                 const hasDiscount = item.product.discount && item.product.discount > 0 && 
                   (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
                 const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
+                const isAccepted = item.fulfillmentStatus === 'accepted';
+                const showCheckbox = order.items.length > 1;
                 return (
-                <div key={idx} className="flex gap-3 items-center p-2 rounded-lg bg-gray-50">
+                <div key={idx} className={`flex gap-3 items-center p-2 rounded-lg ${isAccepted ? 'bg-green-50' : 'bg-gray-50'}`}>
+                  {showCheckbox && (
+                    <button
+                      type="button"
+                      onClick={() => !isAccepted && updateOrderItemFulfillment(order.id, idx, 'accepted')}
+                      disabled={isAccepted}
+                      className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                        isAccepted 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-gray-200 text-gray-400 hover:bg-gray-300'
+                      }`}
+                    >
+                      {isAccepted && <Check className="w-3 h-3" />}
+                    </button>
+                  )}
                   <div className="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                     {item.product.image && (
                       <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />

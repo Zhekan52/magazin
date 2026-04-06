@@ -177,7 +177,10 @@ export default function Tracking() {
                   <div className={`text-xs mt-1 font-medium ${
                     isAccepted ? 'text-green-600' : 'text-gray-400'
                   }`}>
-                    {isAccepted ? '✓ Принят' : isPending && searchedOrder.status === 'arrived' ? '⏳ В пути' : ''}
+                    {isAccepted 
+                      ? '✓ Принят' 
+                      : `⏳ В пути (${searchedOrder.items.length - searchedOrder.items.filter(i => i.fulfillmentStatus === 'accepted').length} ед.)`
+                    }
                   </div>
                 </div>
                 <div className="font-bold text-lg">
