@@ -133,7 +133,7 @@ export const useStore = create<AppState>()(
         try {
           const productsClean = state.products.map(p => ({
             ...p,
-            image: p.image && p.image.length > 500000 ? '' : p.image
+            image: '' 
           }));
           const dataToSave: AppStateData = {
             adminPassword: state.adminPassword,
@@ -159,9 +159,10 @@ export const useStore = create<AppState>()(
           const snap = await getDoc(doc(db, DATA_DOC, 'main'));
           if (snap.exists()) {
             const data = snap.data() as AppStateData;
+            const currentState = useStore.getState();
             set({
               categories: data.categories || initialCategories,
-              products: data.products || initialProducts,
+              products: currentState.products,
               orders: data.orders || [],
               usedCodes: data.usedCodes || [],
               storeClosed: data.storeClosed || false,

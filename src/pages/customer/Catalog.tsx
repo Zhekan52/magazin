@@ -244,7 +244,7 @@ export default function Catalog() {
             </div>
           ) : (
             cart.map(item => (
-              <div key={`${item.product.id}-${item.selectedSize}`} className="flex gap-4 p-4 rounded-2xl bg-gradient-to-br from-gray-50 to-white border border-[#F0F0F0] hover:border-[#2D3436]/20 hover:shadow-md transition-all duration-300 group overflow-visible">
+              <div key={`${item.product.id}-${item.selectedSize}`} className="flex gap-4 p-4 rounded-2xl bg-gradient-to-br from-gray-50 to-white border border-[#F0F0F0] hover:border-[#2D3436]/20 hover:shadow-md transition-all duration-300 group">
                 <div className="w-20 h-20 bg-white rounded-xl overflow-hidden shrink-0 border-2 border-[#F0F0F0] group-hover:border-[#2D3436]/20 transition-colors">
                   {item.product.image ? (
                     <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
@@ -252,7 +252,7 @@ export default function Catalog() {
                     <div className="w-full h-full bg-gray-100 flex items-center justify-center text-2xl">📦</div>
                   )}
                 </div>
-                <div className="flex-1 flex flex-col justify-between min-w-0 overflow-visible">
+                <div className="flex-1 flex flex-col justify-between min-w-0">
                   <div className="flex justify-between gap-2 items-start">
                     <div className="min-w-0">
                       <h4 className="font-semibold text-[#1a1a1a] line-clamp-2">{item.product.name}</h4>
@@ -266,32 +266,30 @@ export default function Catalog() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="flex items-center justify-between mt-2 whitespace-nowrap z-10 relative">
-                    <div className="flex items-center gap-1">
-                      {(item.product.discount && item.product.discount > 0 && (!item.product.discountEndDate || item.product.discountEndDate > Date.now())) ? (
-                        <>
-                          <span className="font-bold text-[#2D3436]">{getItemPrice(item)} ₽</span>
-                          <span className="text-xs text-gray-400 line-through">{item.product.price} ₽</span>
-                          <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">-{item.product.discount}%</span>
-                        </>
-                      ) : (
+                  <div className="flex items-center justify-between mt-2">
+                    {(item.product.discount && item.product.discount > 0 && (!item.product.discountEndDate || item.product.discountEndDate > Date.now())) ? (
+                      <div className="flex items-center gap-1">
                         <span className="font-bold text-[#2D3436]">{getItemPrice(item)} ₽</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-[#E8E8E8] shadow-sm">
+                        <span className="text-xs text-gray-400 line-through">{item.product.price} ₽</span>
+                        <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">-{item.product.discount}%</span>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-[#2D3436]">{getItemPrice(item)} ₽</span>
+                    )}
+                    <div className="flex items-center bg-gray-100 rounded-lg overflow-hidden">
                       <button 
                         onClick={() => {
                           if (item.quantity > 1) updateCartQuantity(item.product.id, item.quantity - 1, item.selectedSize);
                           else removeFromCart(item.product.id, item.selectedSize);
                         }}
-                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-gray-200 transition-colors text-gray-600"
                       >
                         <Minus className="w-3.5 h-3.5" />
                       </button>
-                      <span className="text-sm font-bold w-6 text-center">{item.quantity}</span>
+                      <span className="px-3 text-sm font-bold">{item.quantity}</span>
                       <button 
                         onClick={() => updateCartQuantity(item.product.id, item.quantity + 1, item.selectedSize)}
-                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-gray-200 transition-colors text-gray-600"
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </button>
