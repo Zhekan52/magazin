@@ -206,15 +206,17 @@ export default function Dashboard() {
                 return (
                 <div key={idx} className={`flex gap-2 items-center p-2 rounded-lg ${isAccepted ? 'bg-green-50' : 'bg-gray-50 opacity-60'}`}>
                   <button
+                    type="button"
                     onClick={() => {
                       const newStatus = isAccepted ? undefined : 'accepted';
                       updateOrderItemFulfillment(order.id, idx, newStatus);
                     }}
+                    disabled={order.status !== 'in_transit' && order.status !== 'arrived'}
                     className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
                       isAccepted 
                         ? 'bg-green-500 text-white' 
                         : 'bg-gray-200 text-gray-400 hover:bg-gray-300'
-                    }`}
+                    } ${order.status !== 'in_transit' && order.status !== 'arrived' ? 'opacity-30 cursor-not-allowed' : ''}`}
                   >
                     <Check className="w-3 h-3" />
                   </button>
@@ -257,7 +259,6 @@ export default function Dashboard() {
                       updateOrderItemFulfillment(order.id, idx, 'accepted');
                     }
                   });
-                  updateOrderStatus(order.id, 'arrived');
                 }}
                 className="w-full py-3 rounded-xl font-bold bg-blue-500 text-white hover:bg-blue-600 transition-colors"
               >
