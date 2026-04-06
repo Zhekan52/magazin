@@ -4,7 +4,11 @@ import "./index.css";
 import App from "./App";
 import { useStore } from "./store";
 
-useStore.getState().loadFromFirebase();
+const init = async () => {
+  await useStore.getState().loadFromFirebase();
+};
+
+init().catch(console.error);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

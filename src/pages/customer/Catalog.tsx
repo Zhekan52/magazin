@@ -244,7 +244,7 @@ export default function Catalog() {
             </div>
           ) : (
             cart.map(item => (
-              <div key={`${item.product.id}-${item.selectedSize}`} className="flex gap-4 p-4 rounded-2xl bg-gradient-to-br from-gray-50 to-white border border-[#F0F0F0] hover:border-[#2D3436]/20 hover:shadow-md transition-all duration-300 group">
+              <div key={`${item.product.id}-${item.selectedSize}`} className="flex gap-4 p-4 rounded-2xl bg-gradient-to-br from-gray-50 to-white border border-[#F0F0F0] hover:border-[#2D3436]/20 hover:shadow-md transition-all duration-300 group overflow-visible">
                 <div className="w-20 h-20 bg-white rounded-xl overflow-hidden shrink-0 border-2 border-[#F0F0F0] group-hover:border-[#2D3436]/20 transition-colors">
                   {item.product.image ? (
                     <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
@@ -252,7 +252,7 @@ export default function Catalog() {
                     <div className="w-full h-full bg-gray-100 flex items-center justify-center text-2xl">📦</div>
                   )}
                 </div>
-                <div className="flex-1 flex flex-col justify-between min-w-0 overflow-hidden">
+                <div className="flex-1 flex flex-col justify-between min-w-0 overflow-visible">
                   <div className="flex justify-between gap-2 items-start">
                     <div className="min-w-0">
                       <h4 className="font-semibold text-[#1a1a1a] line-clamp-2">{item.product.name}</h4>
@@ -278,7 +278,7 @@ export default function Catalog() {
                         <span className="font-bold text-[#2D3436]">{getItemPrice(item)} ₽</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-[#E8E8E8] shadow-sm -mr-2 -mb-2">
+                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-[#E8E8E8] shadow-sm">
                       <button 
                         onClick={() => {
                           if (item.quantity > 1) updateCartQuantity(item.product.id, item.quantity - 1, item.selectedSize);

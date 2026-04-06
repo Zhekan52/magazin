@@ -131,11 +131,15 @@ export const useStore = create<AppState>()(
       syncToFirebase: async () => {
         const state = get();
         try {
+          const productsClean = state.products.map(p => ({
+            ...p,
+            image: p.image && p.image.length > 500000 ? '' : p.image
+          }));
           const dataToSave: AppStateData = {
             adminPassword: state.adminPassword,
             isAdminAuthenticated: state.isAdminAuthenticated,
             categories: state.categories,
-            products: state.products,
+            products: productsClean,
             orders: state.orders,
             usedCodes: state.usedCodes,
             storeClosed: state.storeClosed,
