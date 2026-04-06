@@ -57,6 +57,12 @@ export default function POS() {
       newItems[index] = { ...newItems[index], fulfillmentStatus: status };
       return { ...prev, items: newItems };
     });
+    if (order.status === 'in_transit' && status === 'accepted') {
+      const allAccepted = newItems.every((i: any) => i.fulfillmentStatus === 'accepted');
+      if (allAccepted) {
+        updateOrderStatus(order.id, 'arrived');
+      }
+    }
   };
 
   const calculateTotal = () => {
@@ -134,7 +140,7 @@ export default function POS() {
           {error && <p className="text-red-500 font-medium mt-4 animate-pulse">{error}</p>}
         </div>
 
-        {activeOrder && order?.status === 'in_transit' && !order.items.some(i => i.fulfillmentStatus === 'accepted') && (
+        {activeOrder && order?.status === 'in_transit' && !order.items.some(i => i.fulfillmentStatus) && (
           <div className="flex-1 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-[2rem] border-2 border-yellow-200 shadow-lg flex flex-col items-center justify-center p-8 text-center gap-4">
             <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center shadow-lg">
               <Truck className="w-10 h-10 text-yellow-600" />
@@ -145,7 +151,7 @@ export default function POS() {
         )}
 
         {activeOrder && (
-          (order?.status === 'in_transit' && order.items.some(i => i.fulfillmentStatus === 'accepted')) ||
+          (order?.status === 'in_transit' && order.items.every(i => i.fulfillmentStatus === 'accepted')) ||
           order?.status === 'arrived' ||
           order?.status === 'issued'
         ) && (
@@ -282,7 +288,7 @@ export default function POS() {
           Оплата наличными
         </h3>
 
-        {activeOrder && (order?.status === 'arrived' || order?.status === 'issued') ? (
+        {activeOrder && (order?.status === 'arrived' || order?.status === 'issued' || (order?.status === 'in_transit' && order.items.every(i => i.fulfillmentStatus === 'accepted'))) ? (
           <>
             <div className="flex-1 relative z-10">
               <div className="bg-gradient-to-br from-white/10 to-white/5 p-8 rounded-3xl mb-6 border border-white/10">
