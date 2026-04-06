@@ -11,7 +11,7 @@ export type CartItem = {
 };
 
 export type OrderItem = CartItem & {
-  fulfillmentStatus?: 'accepted' | 'issued' | 'returned';
+  fulfillmentStatus?: 'accepted' | 'returned';
 };
 
 export type OrderStatus = 'in_transit' | 'arrived' | 'completed' | 'archived' | 'issued' | 'rejected' | 'returned';
@@ -78,7 +78,7 @@ interface AppState extends AppStateData {
   
   addOrder: (order: Omit<Order, 'id' | 'createdAt'>) => string;
   updateOrderStatus: (id: string, status: OrderStatus) => void;
-  updateOrderItemFulfillment: (orderId: string, itemIndex: number, status: 'accepted' | 'issued' | 'returned') => void;
+  updateOrderItemFulfillment: (orderId: string, itemIndex: number, status: 'accepted' | 'returned') => void;
   completeOrder: (id: string) => void;
   archiveOrder: (id: string, reason?: 'issued' | 'rejected') => void;
   returnOrder: (orderId: string, code: string) => { success: boolean; message: string };

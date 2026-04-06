@@ -28,6 +28,7 @@ export default function Tracking() {
     if (days >= 2 && days <= 4) return `${days} дня`;
     return `${days} дней`;
   };
+      setTimeLeft(getDaysText(days));
     }, 1000);
     return () => clearInterval(interval);
   }, [searchedOrder?.issuedAt]);
@@ -46,7 +47,7 @@ export default function Tracking() {
       setSearchedOrder(null);
       setError('Заказ не найден');
     }
-};
+  };
 
   const getStatusDisplay = (status: string) => {
     switch(status) {
@@ -106,7 +107,6 @@ export default function Tracking() {
             })()}
           </div>
 
-          {/* Status timeline */}
           <div className="space-y-3 mb-8">
             <div className="flex items-center gap-3 text-sm">
               <span className="text-gray-500 w-24">Оформлен:</span>
@@ -154,14 +154,10 @@ export default function Tracking() {
           <div className="space-y-4 mb-8 max-h-[40vh] overflow-y-auto pr-2">
             {searchedOrder.items.map((item, idx) => {
               const isAccepted = item.fulfillmentStatus === 'accepted';
-              const isIssued = item.fulfillmentStatus === 'issued';
-              const isReturned = item.fulfillmentStatus === 'returned';
               const isPending = !item.fulfillmentStatus;
               return (
               <div key={idx} className={`flex gap-4 items-center p-4 rounded-2xl border ${
-                isIssued ? 'bg-blue-50 border-blue-200' :
                 isAccepted ? 'bg-green-50 border-green-200' :
-                isReturned ? 'bg-red-50 border-red-200' :
                 isPending && searchedOrder.status === 'arrived' ? 'bg-gray-50 border-[#F0F0F0] opacity-60' :
                 'bg-gray-50/50 border-[#F0F0F0]'
               }`}>
@@ -179,20 +175,16 @@ export default function Tracking() {
                     {item.selectedSize && <span className="ml-2 bg-[#2D3436]/10 px-2 py-0.5 rounded text-xs">Размер: {item.selectedSize}</span>}
                   </div>
                   <div className={`text-xs mt-1 font-medium ${
-                    isIssued ? 'text-blue-600' : isAccepted ? 'text-green-600' : isReturned ? 'text-red-600' : 'text-gray-400'
+                    isAccepted ? 'text-green-600' : 'text-gray-400'
                   }`}>
-                    {isIssued 
-                      ? '✓ Выдан' 
-                      : isAccepted 
-                      ? '✓ Принят (ожидает выдачи)'
-                      : isReturned 
-                      ? '↩ Возврат'
+                    {isAccepted 
+                      ? '✓ Принят' 
                       : `⏳ В пути (${searchedOrder.items.length - searchedOrder.items.filter(i => i.fulfillmentStatus === 'accepted').length} ед.)`
                     }
                   </div>
                 </div>
                 <div className="font-bold text-lg">
-                  {isReturned ? <span className="line-through text-gray-400">{item.product.price * item.quantity} ₽</span> : item.product.price * item.quantity + ' ₽'}
+                  {item.product.price * item.quantity} ₽
                 </div>
               </div>
               );
