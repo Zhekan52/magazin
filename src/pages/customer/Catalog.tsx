@@ -267,7 +267,15 @@ export default function Catalog() {
                     </button>
                   </div>
                   <div className="flex items-center justify-between mt-2">
-                    <span className="font-bold text-[#2D3436]">{getItemPrice(item)} ₽</span>
+                    {(item.product.discount && item.product.discount > 0 && (!item.product.discountEndDate || item.product.discountEndDate > Date.now())) ? (
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[#2D3436]">{getItemPrice(item)} ₽</span>
+                        <span className="text-xs text-gray-400 line-through">{item.product.price} ₽</span>
+                        <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">-{item.product.discount}%</span>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-[#2D3436]">{getItemPrice(item)} ₽</span>
+                    )}
                     <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-[#E8E8E8] shadow-sm">
                       <button 
                         onClick={() => {
