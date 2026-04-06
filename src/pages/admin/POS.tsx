@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../../store';
-import { Search, CheckCircle, XCircle, Banknote, User, Truck, Package, ArrowRight, RotateCcw, Clock } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Banknote, User, Truck, Package, ArrowRight, Clock } from 'lucide-react';
 
 export default function POS() {
   const orders = useStore(state => state.orders);
@@ -48,7 +48,7 @@ export default function POS() {
     }
   };
 
-  const handleFulfill = (index: number, status: 'accepted' | 'returned') => {
+  const handleFulfill = (index: number, status: 'accepted' | 'issued' | 'returned') => {
     if (!order) return;
     updateOrderItemFulfillment(order.id, index, status);
     setActiveOrder(prev => {
@@ -57,12 +57,18 @@ export default function POS() {
       newItems[index] = { ...newItems[index], fulfillmentStatus: status };
       return { ...prev, items: newItems };
     });
+    if (status === 'accepted') {
+      const hasAllAccepted = newItems.every((i: any) => i.fulfillmentStatus === 'accepted');
+      if (hasAllAccepted && order.status === 'in_transit') {
+        updateOrderStatus(order.id, 'arrived');
+      }
+    }
   };
 
   const calculateTotal = () => {
     if (!activeOrder) return 0;
     return activeOrder.items.reduce((sum, item) => {
-      if (item.fulfillmentStatus !== 'returned') {
+      if (item.fulfillmentStatus === 'issued') {
         const hasDiscount = item.product.discount && item.product.discount > 0 &&
           (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
         const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
@@ -72,16 +78,21 @@ export default function POS() {
     }, 0);
   };
 
+  const hasAnyItems = activeOrder && activeOrder.items.some(item => 
+    item.fulfillmentStatus === 'accepted' || 
+    item.fulfillmentStatus === 'issued' || 
+    item.fulfillmentStatus === 'returned'
+  );
+
+  const allItemsProcessed = activeOrder && activeOrder.items.every(item => 
+    item.fulfillmentStatus === 'issued' || item.fulfillmentStatus === 'returned'
+  );
+
   const handlePayment = () => {
     if (!activeOrder) return;
-    const hasAny = activeOrder.items.some(item => item.fulfillmentStatus === 'accepted' || item.fulfillmentStatus === 'returned');
-    if (!hasAny) {
-      alert('Выберите товар');
-      return;
-    }
-
-    const hasRejected = activeOrder.items.some(item => item.fulfillmentStatus === 'returned');
-    const hasAccepted = activeOrder.items.some(item => item.fulfillmentStatus === 'accepted');
+    
+    const hasIssued = activeOrder.items.some(item => item.fulfillmentStatus === 'issued');
+    const hasReturned = activeOrder.items.some(item => item.fulfillmentStatus === 'returned');
 
     if (order?.status === 'issued') {
       updateOrderStatus(activeOrder.id, 'returned');
@@ -92,18 +103,13 @@ export default function POS() {
       return;
     }
 
-    if (hasRejected && hasAccepted) {
-      archiveOrder(activeOrder.id, 'issued');
-    } else if (hasRejected && !hasAccepted) {
-      archiveOrder(activeOrder.id, 'rejected');
-    } else {
-      archiveOrder(activeOrder.id, 'issued');
+    if (hasIssued || hasReturned) {
+      archiveOrder(activeOrder.id, hasIssued ? 'issued' : 'rejected');
+      setActiveOrder(null);
+      setCode('');
+      setShowPayment(false);
+      alert('Завершено.');
     }
-
-    setActiveOrder(null);
-    setCode('');
-    setShowPayment(false);
-    alert('Заказ завершен.');
   };
 
   return (
@@ -134,15 +140,28 @@ export default function POS() {
           {error && <p className="text-red-500 font-medium mt-4 animate-pulse">{error}</p>}
         </div>
 
+        {activeOrder && order?.status === 'in_transit' && !order.items.some(i => i.fulfillmentStatus === 'accepted') && (
+          <div className="flex-1 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-[2rem] border-2 border-yellow-200 shadow-lg flex flex-col items-center justify-center p-8 text-center gap-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center shadow-lg">
+              <Truck className="w-10 h-10 text-yellow-600" />
+            </div>
+            <p className="text-xl font-bold text-yellow-800">Заказ еще в пути</p>
+            <p className="text-sm text-yellow-600 bg-white/50 px-4 py-2 rounded-xl">Сначала примите заказ в разделе "Заказы"</p>
+          </div>
+        )}
+
         {activeOrder && (
           (order?.status === 'in_transit' && order.items.some(i => i.fulfillmentStatus === 'accepted')) ||
-          order?.status === 'arrived'
+          order?.status === 'arrived' ||
+          order?.status === 'issued'
         ) && (
           <div className="bg-white rounded-[2rem] p-8 border border-[#F0F0F0] shadow-lg shadow-gray-200/50 flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between mb-6 pb-6 border-b-2 border-dashed border-[#E8E8E8]">
               <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-[#2D3436] to-[#1a1f21] bg-clip-text text-transparent">Сборка заказа</h2>
-                {order?.issuedAt && (
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-[#2D3436] to-[#1a1f21] bg-clip-text text-transparent">
+                  {order?.status === 'issued' ? 'Выдача товаров' : 'Сборка заказа'}
+                </h2>
+                {order?.issuedAt && order?.status === 'issued' && (
                   <p className="text-sm text-green-600 mt-2 flex items-center gap-2 bg-green-50 px-3 py-1 rounded-lg w-fit">
                     <CheckCircle className="w-4 h-4" />
                     Выдан: {new Date(order.issuedAt).toLocaleString('ru-RU')}
@@ -163,12 +182,15 @@ export default function POS() {
             <div className="flex-1 overflow-y-auto pr-2 space-y-4">
               {activeOrder.items.map((item, index) => {
                 const isAccepted = item.fulfillmentStatus === 'accepted';
-                const isPending = !item.fulfillmentStatus;
+                const isIssued = item.fulfillmentStatus === 'issued';
+                const isReturned = item.fulfillmentStatus === 'returned';
                 return (
                   <div
                     key={index}
                     className={`flex gap-5 p-5 rounded-2xl border-2 transition-all duration-300 ${
-                      item.fulfillmentStatus === 'returned'
+                      isIssued
+                        ? 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 shadow-lg shadow-blue-200/30'
+                        : item.fulfillmentStatus === 'returned'
                         ? 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200 opacity-75'
                         : isAccepted
                         ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-lg shadow-green-200/30'
@@ -193,38 +215,35 @@ export default function POS() {
                       </div>
 
                       <div className="flex gap-3 mt-3">
-                        {order?.status !== 'issued' && !isPending && (
+                        {!isIssued && !isReturned && order?.status !== 'issued' && (
                           <button
                             type="button"
-                            onClick={() => handleFulfill(index, 'accepted')}
-                            className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg hover:shadow-green-500/30 hover:scale-105 active:scale-95"
+                            onClick={() => handleFulfill(index, isAccepted ? 'returned' : 'accepted')}
+                            className={`px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 ${
+                              isAccepted 
+                                ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white hover:shadow-lg hover:shadow-red-500/30 hover:scale-105 active:scale-95'
+                                : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg hover:shadow-green-500/30 hover:scale-105 active:scale-95'
+                            }`}
                           >
-                            <CheckCircle className="w-4 h-4" />
+                            {isAccepted ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                            {isAccepted ? 'Отказ' : 'Принять'}
+                          </button>
+                        )}
+                        {!isIssued && !isReturned && (order?.status === 'arrived' || order?.status === 'issued') && (
+                          <button
+                            type="button"
+                            onClick={() => handleFulfill(index, 'issued')}
+                            className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30 hover:scale-105 active:scale-95"
+                          >
+                            <Package className="w-4 h-4" />
                             Выдать
                           </button>
                         )}
-                        {order?.status !== 'issued' && !isPending && (
-                          <button
-                            type="button"
-                            onClick={() => handleFulfill(index, 'returned')}
-                            className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white hover:shadow-lg hover:shadow-red-500/30 hover:scale-105 active:scale-95"
-                          >
-                            <XCircle className="w-4 h-4" />
-                            Отказ
-                          </button>
+                        {isIssued && (
+                          <span className="text-sm font-bold text-blue-600 py-2.5 px-3 bg-blue-50 rounded-lg">✓ Выдан</span>
                         )}
-                        {order?.status === 'issued' && isAccepted && (
-                          <button
-                            type="button"
-                            onClick={() => handleFulfill(index, 'returned')}
-                            className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white hover:shadow-lg hover:shadow-red-500/30 hover:scale-105 active:scale-95"
-                          >
-                            <RotateCcw className="w-4 h-4" />
-                            Вернуть
-                          </button>
-                        )}
-                        {isPending && (
-                          <span className="text-sm text-gray-400 py-2.5">Не поступил</span>
+                        {isReturned && (
+                          <span className="text-sm font-bold text-red-600 py-2.5 px-3 bg-red-50 rounded-lg">↩ Возврат</span>
                         )}
                       </div>
                     </div>
@@ -235,7 +254,7 @@ export default function POS() {
                           (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
                         const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
                         return (
-                          <span className={item.fulfillmentStatus === 'returned' ? 'line-through text-gray-400' : 'text-[#2D3436]'}>
+                          <span className={isReturned ? 'line-through text-gray-400' : 'text-[#2D3436]'}>
                             {price * item.quantity} ₽
                             {hasDiscount && <span className="text-xs ml-1 text-green-600">(-{item.product.discount}%)</span>}
                           </span>
@@ -271,7 +290,7 @@ export default function POS() {
           Оплата наличными
         </h3>
 
-        {activeOrder && order?.status !== 'in_transit' && order?.status !== 'rejected' && order?.status !== 'returned' ? (
+        {activeOrder && (order?.status === 'arrived' || order?.status === 'issued') ? (
           <>
             <div className="flex-1 relative z-10">
               <div className="bg-gradient-to-br from-white/10 to-white/5 p-8 rounded-3xl mb-6 border border-white/10">
@@ -284,13 +303,13 @@ export default function POS() {
 
               <div className="space-y-4 text-sm text-gray-400">
                 <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl">
-                  <span className="font-medium">Товаров принято</span>
-                  <span className="text-white font-bold text-lg bg-green-500/20 px-3 py-1 rounded-lg">
-                    {activeOrder.items.filter(i => i.fulfillmentStatus !== 'returned').reduce((acc, i) => acc + i.quantity, 0)} шт.
+                  <span className="font-medium">К выдаче</span>
+                  <span className="text-white font-bold text-lg bg-blue-500/20 px-3 py-1 rounded-lg">
+                    {activeOrder.items.filter(i => i.fulfillmentStatus === 'issued').reduce((acc, i) => acc + i.quantity, 0)} шт.
                   </span>
                 </div>
                 <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl">
-                  <span className="font-medium">Отказ</span>
+                  <span className="font-medium">Возврат</span>
                   <span className="text-white font-bold text-lg bg-red-500/20 px-3 py-1 rounded-lg">
                     {activeOrder.items.filter(i => i.fulfillmentStatus === 'returned').reduce((acc, i) => acc + i.quantity, 0)} шт.
                   </span>
@@ -301,9 +320,10 @@ export default function POS() {
             {!showPayment ? (
               <button
                 onClick={() => setShowPayment(true)}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white py-5 rounded-2xl font-bold text-lg transition-all duration-300 hover:shadow-xl hover:shadow-green-500/30 active:scale-[0.98] relative z-10"
+                disabled={!hasAnyItems}
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white py-5 rounded-2xl font-bold text-lg transition-all duration-300 hover:shadow-xl hover:shadow-green-500/30 active:scale-[0.98] relative z-10 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Принять оплату
+                Завершить
               </button>
             ) : (
               <div className="mt-6 space-y-4 animate-in slide-in-from-bottom-4 relative z-10">
