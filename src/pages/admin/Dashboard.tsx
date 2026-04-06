@@ -185,10 +185,10 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {activeOrders.map(order => (
           <div key={order.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-[#F0F0F0] flex flex-col hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-6">
-              <div className="bg-gray-100 px-4 py-2 rounded-xl">
-                <span className="text-xs text-gray-500 font-medium uppercase tracking-wider block mb-1">Код заказа</span>
-                <span className="text-2xl font-black text-[#2D3436] tracking-widest">{order.code}</span>
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <span className="text-xs text-gray-400 font-medium block">Заказ {order.code}</span>
+                <p className="text-xs text-gray-400">{new Date(order.createdAt).toLocaleString('ru-RU')}</p>
               </div>
               <div className={`p-2 rounded-full ${
                 order.status === 'in_transit' ? 'bg-blue-50 text-blue-500' : 'bg-green-50 text-green-500'
@@ -197,60 +197,49 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="space-y-3 mb-6 flex-1 overflow-y-auto max-h-48 pr-2">
+            <div className="space-y-2 mb-4">
               {order.items.map((item, idx) => {
                 const hasDiscount = item.product.discount && item.product.discount > 0 && 
                   (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
                 const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
                 const isAccepted = item.fulfillmentStatus === 'accepted';
                 return (
-                <div key={idx} className={`flex gap-3 items-center p-2 rounded-xl ${isAccepted ? 'bg-green-50' : 'bg-gray-50'}`}>
+                <div key={idx} className={`flex gap-2 items-center p-2 rounded-lg ${isAccepted ? 'bg-green-50' : 'bg-gray-50'}`}>
                   <button
                     onClick={() => updateOrderItemFulfillment(order.id, idx, isAccepted ? 'returned' : 'accepted')}
-                    disabled={order.status === 'archived'}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                    className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
                       isAccepted 
                         ? 'bg-green-500 text-white' 
                         : 'bg-gray-200 text-gray-400 hover:bg-gray-300'
                     }`}
                   >
-                    <Check className="w-4 h-4" />
+                    <Check className="w-3 h-3" />
                   </button>
-                  <div className="w-10 h-10 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-[#F0F0F0]">
-                    {item.product.image && (
-                      <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
-                    )}
-                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{item.product.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {item.quantity} шт.
-                      {hasDiscount && <span className="ml-1 text-green-600">-{item.product.discount}%</span>}
-                      {item.selectedSize && <span className="ml-1 text-[#2D3436]">Размер: {item.selectedSize}</span>}
-                    </p>
+                    <p className="font-medium text-xs truncate">{item.product.name}</p>
                   </div>
-                  <div className="text-sm font-medium">
-                    {price} ₽
+                  <div className="text-xs font-medium text-gray-500">
+                    {item.quantity}×{price}
                   </div>
                 </div>
                 );
               })}
             </div>
 
-            <div className="border-t border-[#F0F0F0] pt-4 mb-4">
-              <div className="flex justify-between text-sm text-gray-500 mb-1">
-                <span>Итого к оплате</span>
-              </div>
-              <div className="text-2xl font-bold">
-                {(() => {
-                  const total = order.items.reduce((sum, item) => {
-                    const hasDiscount = item.product.discount && item.product.discount > 0 && 
-                      (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
-                    const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
-                    return sum + price * item.quantity;
-                  }, 0);
-                  return total;
-                })()} ₽
+            <div className="mt-auto">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">К оплате</span>
+                <span className="text-2xl font-black bg-gradient-to-r from-[#2D3436] to-[#1a1f21] bg-clip-text text-transparent">
+                  {(() => {
+                    const total = order.items.reduce((sum, item) => {
+                      const hasDiscount = item.product.discount && item.product.discount > 0 && 
+                        (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
+                      const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
+                      return sum + price * item.quantity;
+                    }, 0);
+                    return total;
+                  })()} ₽
+                </span>
               </div>
             </div>
 

@@ -26,12 +26,13 @@ export default function POS() {
         return;
       }
       const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
-      setTimeLeft(`${days} день${days === 1 ? '' : days < 5 ? 'я' : 'ей'}`);
+      const daysText = days === 1 ? '1 день' : days >= 2 && days <= 4 ? `${days} дня` : `${days} дней`;
+      setTimeLeft(daysText);
     }, 1000);
     return () => clearInterval(interval);
   }, [activeOrder?.issuedAt]);
 
-  const order = orders.find(o => o.id === activeOrder?.id);
+  const order = orders.find(o => o.code === code);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +50,8 @@ export default function POS() {
   };
   
   const handleFulfill = (index: number, status: 'accepted' | 'returned') => {
-    updateOrderItemFulfillment(activeOrder.id, index, status);
+    if (!order) return;
+    updateOrderItemFulfillment(order.id, index, status);
     setActiveOrder(prev => {
       if (!prev) return prev;
       const newItems = [...prev.items];

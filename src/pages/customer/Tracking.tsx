@@ -22,7 +22,12 @@ export default function Tracking() {
         return;
       }
       const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
-      setTimeLeft(`${days} день${days === 1 ? '' : days < 5 ? 'я' : 'ей'}`);
+      const getDaysText = (days: number) => {
+    if (days === 0) return '0 дней';
+    if (days === 1) return '1 день';
+    if (days >= 2 && days <= 4) return `${days} дня`;
+    return `${days} дней`;
+  };
     }, 1000);
     return () => clearInterval(interval);
   }, [searchedOrder?.issuedAt]);
