@@ -206,7 +206,10 @@ export default function Dashboard() {
                 return (
                 <div key={idx} className={`flex gap-2 items-center p-2 rounded-lg ${isAccepted ? 'bg-green-50' : 'bg-gray-50 opacity-60'}`}>
                   <button
-                    onClick={() => updateOrderItemFulfillment(order.id, idx, isAccepted ? 'returned' : 'accepted')}
+                    onClick={() => {
+                      const newStatus = isAccepted ? undefined : 'accepted';
+                      updateOrderItemFulfillment(order.id, idx, newStatus);
+                    }}
                     className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
                       isAccepted 
                         ? 'bg-green-500 text-white' 
