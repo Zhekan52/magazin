@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../../store';
-import { Search, CheckCircle, XCircle, Banknote, User, Truck, Package, ArrowRight, RotateCcw } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Banknote, User, Truck, Package, ArrowRight, RotateCwb, Clock } from 'lucide-react';
 
 export default function POS() {
   const orders = useStore(state => state.orders);
@@ -11,6 +11,25 @@ export default function POS() {
   const [activeOrder, setActiveOrder] = useState<typeof orders[0] | null>(null);
   const [error, setError] = useState('');
   const [showPayment, setShowPayment] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<string>('');
+
+  useEffect(() => {
+    if (!activeOrder?.issuedAt) {
+      setTimeLeft('');
+      return;
+    }
+    const interval = setInterval(() => {
+      const deadline = activeOrder.issuedAt + 5 * 24 * 60 * 60 * 1000;
+      const diff = deadline - Date.now();
+      if (diff <= 0) {
+        setTimeLeft('0 дней');
+        return;
+      }
+      const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
+      setTimeLeft(`${days} день${days === 1 ? '' : days < 5 ? 'я' : 'ей'}`);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activeOrder?.issuedAt]);
 
   const order = orders.find(o => o.id === activeOrder?.id);
 
@@ -153,6 +172,12 @@ export default function POS() {
                     Выдан: {new Date(order.issuedAt).toLocaleString('ru-RU')}
                   </p>
                 )}
+                {order?.status === 'issued' && order?.issuedAt && (
+                  <p className="text-sm text-orange-600 mt-2 flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-lg w-fit">
+                    <Clock className="w-4 h-4" />
+                    На возврат осталось: {timeLeft}
+                  </p>
+                )}
               </div>
               <div className="bg-gradient-to-br from-[#2D3436] to-[#1a1f21] text-white px-6 py-3 rounded-2xl font-bold font-mono text-xl tracking-widest shadow-lg">
                 {activeOrder.code}
@@ -168,6 +193,8 @@ export default function POS() {
                       ? 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200 opacity-75' 
                       : item.fulfillmentStatus === 'accepted'
                       ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-lg shadow-green-200/30'
+                      : order?.status === 'arrived'
+                      ? 'bg-gray-50 border-gray-200 opacity-60'
                       : 'bg-white border-[#E8E8E8] hover:border-[#2D3436]/30'
                   }`}
                 >

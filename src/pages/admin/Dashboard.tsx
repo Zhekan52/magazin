@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useStore } from '../../store';
-import { Package, Truck, CheckCircle, Archive, Calendar } from 'lucide-react';
+import { Package, Truck, CheckCircle, Archive, Calendar, Check, X } from 'lucide-react';
 
 export default function Dashboard() {
-  const { orders, updateOrderStatus } = useStore();
+  const { orders, updateOrderStatus, updateOrderItemFulfillment } = useStore();
   const [filter, setFilter] = useState<'all' | 'in_transit' | 'arrived' | 'archived'>('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -202,8 +202,20 @@ export default function Dashboard() {
                 const hasDiscount = item.product.discount && item.product.discount > 0 && 
                   (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
                 const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
+                const isAccepted = item.fulfillmentStatus === 'accepted';
                 return (
-                <div key={idx} className="flex gap-3 items-center">
+                <div key={idx} className={`flex gap-3 items-center p-2 rounded-xl ${isAccepted ? 'bg-green-50' : 'bg-gray-50'}`}>
+                  <button
+                    onClick={() => updateOrderItemFulfillment(order.id, idx, isAccepted ? 'returned' : 'accepted')}
+                    disabled={order.status === 'archived'}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                      isAccepted 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 text-gray-400 hover:bg-gray-300'
+                    }`}
+                  >
+                    <Check className="w-4 h-4" />
+                  </button>
                   <div className="w-10 h-10 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-[#F0F0F0]">
                     {item.product.image && (
                       <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />

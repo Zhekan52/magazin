@@ -1,12 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../../store';
-import { Search, Package, MapPin, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
+import { Search, Package, MapPin, CheckCircle, XCircle, RotateCcw, Clock } from 'lucide-react';
 
 export default function Tracking() {
   const { orders } = useStore();
   const [code, setCode] = useState('');
   const [searchedOrder, setSearchedOrder] = useState<typeof orders[0] | null>(null);
   const [error, setError] = useState('');
+  const [timeLeft, setTimeLeft] = useState<string>('');
+
+  useEffect(() => {
+    if (!searchedOrder?.issuedAt) {
+      setTimeLeft('');
+      return;
+    }
+    const interval = setInterval(() => {
+      const deadline = searchedOrder.issuedAt + 5 * 24 * 60 * 60 * 1000;
+      const diff = deadline - Date.now();
+      if (diff <= 0) {
+        setTimeLeft('0 дней');
+        return;
+      }
+      const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
+      setTimeLeft(`${days} день${days === 1 ? '' : days < 5 ? 'я' : 'ей'}`);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [searchedOrder?.issuedAt]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +41,7 @@ export default function Tracking() {
       setSearchedOrder(null);
       setError('Заказ не найден');
     }
-  };
+};
 
   const getStatusDisplay = (status: string) => {
     switch(status) {
@@ -33,11 +52,6 @@ export default function Tracking() {
       case 'returned': return { label: 'Возвращен', color: 'text-red-600', bg: 'bg-red-100', icon: RotateCcw };
       default: return { label: 'Завершен', color: 'text-gray-500', bg: 'bg-gray-50', icon: CheckCircle };
     }
-  };
-
-  const getReturnDeadline = (issuedAt: number) => {
-    const deadline = issuedAt + 5 * 24 * 60 * 60 * 1000;
-    return new Date(deadline).toLocaleString('ru-RU');
   };
 
   return (
@@ -107,9 +121,12 @@ export default function Tracking() {
                   <span className="text-gray-500 w-24">Выдан:</span>
                   <span className="font-medium text-green-600">{new Date(searchedOrder.issuedAt).toLocaleString('ru-RU')}</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="text-gray-500 w-24">Вернуть до:</span>
-                  <span className="font-medium text-orange-600">{getReturnDeadline(searchedOrder.issuedAt)}</span>
+                <div className="flex items-center gap-3 text-sm bg-orange-50 p-3 rounded-xl">
+                  <Clock className="w-5 h-5 text-orange-500" />
+                  <div>
+                    <span className="text-gray-500">На возврат осталось: </span>
+                    <span className="font-bold text-orange-600">{timeLeft}</span>
+                  </div>
                 </div>
               </>
             )}
@@ -130,8 +147,15 @@ export default function Tracking() {
           </div>
 
           <div className="space-y-4 mb-8 max-h-[40vh] overflow-y-auto pr-2">
-            {searchedOrder.items.map((item, idx) => (
-              <div key={idx} className="flex gap-4 items-center p-4 rounded-2xl bg-gray-50/50 border border-[#F0F0F0]">
+            {searchedOrder.items.map((item, idx) => {
+              const isAccepted = item.fulfillmentStatus === 'accepted';
+              const isPending = !item.fulfillmentStatus;
+              return (
+              <div key={idx} className={`flex gap-4 items-center p-4 rounded-2xl border ${
+                isAccepted ? 'bg-green-50 border-green-200' :
+                isPending && searchedOrder.status === 'arrived' ? 'bg-gray-50 border-[#F0F0F0] opacity-60' :
+                'bg-gray-50/50 border-[#F0F0F0]'
+              }`}>
                 <div className="w-16 h-16 bg-white rounded-xl overflow-hidden shrink-0 border border-[#F0F0F0]">
                   {item.product.image ? (
                      <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
@@ -145,12 +169,18 @@ export default function Tracking() {
                     {item.quantity} шт. × {item.product.price} ₽
                     {item.selectedSize && <span className="ml-2 bg-[#2D3436]/10 px-2 py-0.5 rounded text-xs">Размер: {item.selectedSize}</span>}
                   </div>
+                  <div className={`text-xs mt-1 font-medium ${
+                    isAccepted ? 'text-green-600' : 'text-gray-400'
+                  }`}>
+                    {isAccepted ? '✓ Принят' : isPending && searchedOrder.status === 'arrived' ? '⏳ В пути' : ''}
+                  </div>
                 </div>
                 <div className="font-bold text-lg">
                   {item.product.price * item.quantity} ₽
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="flex justify-between items-center pt-6 border-t border-[#F0F0F0]">
