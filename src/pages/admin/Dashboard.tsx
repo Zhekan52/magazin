@@ -203,14 +203,14 @@ export default function Dashboard() {
                   (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
                 const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
                 return (
-                <div key={idx} className="flex gap-2 items-center p-2 rounded-lg bg-gray-50">
-                  <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden shrink-0 border">
+                <div key={idx} className="flex gap-3 items-center p-2 rounded-lg bg-gray-50">
+                  <div className="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                     {item.product.image && (
                       <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-xs truncate">{item.product.name}</p>
+                    <p className="font-medium text-sm">{item.product.name}</p>
                     <p className="text-xs text-gray-400">{item.quantity} шт. × {price} ₽</p>
                   </div>
                 </div>
