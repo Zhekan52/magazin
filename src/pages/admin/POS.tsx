@@ -132,7 +132,7 @@ export default function POS() {
             </button>
           </form>
           {error && <p className="text-red-500 font-medium mt-4 animate-pulse">{error}</p>}
-        </div>
+</div>
 
         {activeOrder && order?.status === 'in_transit' && !order.items.some(i => i.fulfillmentStatus === 'accepted') && (
           <div className="flex-1 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-[2rem] border-2 border-yellow-200 shadow-lg flex flex-col items-center justify-center p-8 text-center gap-4">
@@ -145,28 +145,6 @@ export default function POS() {
         )}
 
         {activeOrder && order?.status === 'in_transit' && order.items.some(i => i.fulfillmentStatus === 'accepted') && (
-          <div className="flex-1 bg-gradient-to-br from-green-50 to-emerald-50 rounded-[2rem] border-2 border-green-200 shadow-lg flex flex-col items-center justify-center p-8 text-center gap-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center shadow-lg">
-              <CheckCircle className="w-10 h-10 text-green-600" />
-            </div>
-            <p className="text-xl font-bold text-green-800">Товар поступил</p>
-            <p className="text-sm text-green-600 bg-white/50 px-4 py-2 rounded-xl">Можно выдать</p>
-          </div>
-        )}
-
-        {activeOrder && (order?.status === 'rejected' || order?.status === 'returned') && (
-          <div className="flex-1 bg-gradient-to-br from-red-50 to-rose-50 rounded-[2rem] border-2 border-red-200 shadow-lg flex flex-col items-center justify-center p-8 text-center gap-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center shadow-lg">
-              <XCircle className="w-10 h-10 text-red-600" />
-            </div>
-            <p className="text-xl font-bold text-red-800">Заказ уже возвращен</p>
-            <p className="text-sm text-red-600 bg-white/50 px-4 py-2 rounded-xl">
-              {order?.status === 'rejected' ? 'Клиент отказался от товара' : 'Клиент вернул заказ'}
-            </p>
-          </div>
-        )}
-
-        {activeOrder && order?.status !== 'in_transit' && order?.status !== 'rejected' && order?.status !== 'returned' && (
           <div className="bg-white rounded-[2rem] p-8 border border-[#F0F0F0] shadow-lg shadow-gray-200/50 flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between mb-6 pb-6 border-b-2 border-dashed border-[#E8E8E8]">
               <div>

@@ -251,7 +251,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {order.status === 'in_transit' && (
+            {order.status === 'in_transit' && !order.items.every(i => i.fulfillmentStatus === 'accepted') && (
               <button
                 onClick={() => {
                   order.items.forEach((_, idx) => {
