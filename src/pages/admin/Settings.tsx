@@ -111,12 +111,19 @@ export default function Settings() {
               style={{ width: `${Math.min(100, (orders.length / 9000) * 100)}%` }}
             />
         </div>
-      </div>
+</div>
 
-      <div className="bg-white rounded-3xl p-8 shadow-sm border border-[#F0F0F0]">
-        <div className="flex items-center gap-3 mb-8 pb-6 border-b border-[#F0F0F0]">
-          <div className="w-12 h-12 bg-[#2D3436] rounded-xl flex items-center justify-center">
-            <Lock className="w-6 h-6 text-white" />
+        <div className="h-px bg-gray-200 my-8" />
+
+        <div className="bg-white rounded-3xl p-8 shadow-sm border border-[#F0F0F0]">
+          <div className="flex items-center gap-3 mb-8 pb-6 border-b border-[#F0F0F0]">
+            <div className="w-12 h-12 bg-[#2D3436] rounded-xl flex items-center justify-center">
+              <DoorClosed className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Магазин</h2>
+              <p className="text-gray-500 text-sm">Открыт или закрыт</p>
+            </div>
           </div>
           <div>
             <h2 className="text-xl font-bold">Смена пароля</h2>
@@ -399,7 +406,6 @@ export default function Settings() {
             </button>
           </div>
         </div>
-      </div>
     </div>
   );
 }

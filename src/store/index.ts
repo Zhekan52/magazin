@@ -64,7 +64,7 @@ interface AppStateData {
   storeClosedReason: string;
   openingBanner: boolean;
   promoCodes: PromoCode[];
-  appliedPromoCode?: string;
+  appliedPromoCode?: PromoCode;
 }
 
 interface AppState extends AppStateData {
@@ -90,6 +90,7 @@ interface AppState extends AppStateData {
   deletePromoCode: (code: string) => void;
   applyPromoCode: (code: string) => { success: boolean; message: string; discount: number };
   removePromoCode: () => void;
+  getAppliedPromo: () => PromoCode | undefined;
   
   addOrder: (order: Omit<Order, 'id' | 'createdAt'>) => string;
   updateOrderStatus: (id: string, status: OrderStatus) => void;
@@ -286,11 +287,14 @@ export const useStore = create<AppState>()(
         if (!promo) return { success: false, message: 'Промокод не найден', discount: 0 };
         if (promo.expiresAt && promo.expiresAt < Date.now()) return { success: false, message: 'Срок действия истек', discount: 0 };
         if (promo.maxUses && promo.usedCount >= promo.maxUses) return { success: false, message: 'Лимит использований исчерпан', discount: 0 };
-        set({ appliedPromoCode: code.toUpperCase() });
+        set({ appliedPromoCode: promo });
         return { success: true, message: `Применен! -${promo.discount}%`, discount: promo.discount };
       },
       removePromoCode: () => {
         set({ appliedPromoCode: undefined });
+      },
+      getAppliedPromo: () => {
+        return useStore.getState().appliedPromoCode;
       },
       
       addOrder: (orderData) => {
@@ -305,6 +309,9 @@ export const useStore = create<AppState>()(
         } while (state.usedCodes.includes(code) || state.orders.some(o => o.code === code));
         
         const id = Math.random().toString(36).substring(2, 9);
+        
+        const appliedPromo = state.appliedPromoCode;
+        
         const order: Order = {
           ...orderData,
           id,
@@ -312,12 +319,12 @@ export const useStore = create<AppState>()(
           createdAt: Date.now(),
         };
         
-        if (state.appliedPromoCode) {
+        if (appliedPromo) {
           set((state) => ({ 
             orders: [...state.orders, order],
             usedCodes: [...state.usedCodes, orderData.code || code],
             promoCodes: state.promoCodes.map(p => 
-              p.code === state.appliedPromoCode ? { ...p, usedCount: p.usedCount + 1 } : p
+              p.code === appliedPromo.code ? { ...p, usedCount: p.usedCount + 1 } : p
             ),
             appliedPromoCode: undefined,
           }));

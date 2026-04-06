@@ -1,25 +1,36 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../../store';
-import { Search, CheckCircle, XCircle, Banknote, User, Truck, ArrowRight, Clock, RotateCcw } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Banknote, User, Package, ArrowRight, Clock, RotateCcw, Plus, X, Clock3 } from 'lucide-react';
+import type { Order } from '../../store';
+
+type Tab = {
+  id: string;
+  code: string;
+  order: Order | null;
+  showPayment: boolean;
+  cashReceived: string;
+  error: string;
+};
 
 export default function POS() {
   const orders = useStore(state => state.orders);
   const updateOrderItemFulfillment = useStore(state => state.updateOrderItemFulfillment);
   const updateOrderStatus = useStore(state => state.updateOrderStatus);
   const archiveOrder = useStore(state => state.archiveOrder);
-  const [code, setCode] = useState('');
-  const [activeOrder, setActiveOrder] = useState<typeof orders[0] | null>(null);
-  const [error, setError] = useState('');
-  const [showPayment, setShowPayment] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<string>('');
+  
+  const [tabs, setTabs] = useState<Tab[]>([{ id: '1', code: '', order: null, showPayment: false, cashReceived: '', error: '' }]);
+  const [activeTabId, setActiveTabId] = useState('1');
+  const [timeLeft, setTimeLeft] = useState('');
+
+  const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
 
   useEffect(() => {
-    if (!activeOrder?.issuedAt) {
+    if (!activeTab.order?.issuedAt) {
       setTimeLeft('');
       return;
     }
     const interval = setInterval(() => {
-      const deadline = activeOrder.issuedAt + 5 * 24 * 60 * 60 * 1000;
+      const deadline = activeTab.order!.issuedAt + 5 * 24 * 60 * 60 * 1000;
       const diff = deadline - Date.now();
       if (diff <= 0) {
         setTimeLeft('0 дней');
@@ -30,44 +41,59 @@ export default function POS() {
       setTimeLeft(daysText);
     }, 1000);
     return () => clearInterval(interval);
-  }, [activeOrder?.issuedAt]);
+  }, [activeTab.order?.issuedAt]);
 
-  const order = orders.find(o => o.code === code);
+  const addTab = () => {
+    const newId = Date.now().toString();
+    setTabs([...tabs, { id: newId, code: '', order: null, showPayment: false, cashReceived: '', error: '' }]);
+    setActiveTabId(newId);
+  };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (code.length !== 4) return;
-    const found = orders.find(o => o.code === code);
-    if (found) {
-      setActiveOrder(found);
-      setError('');
-      setShowPayment(false);
-    } else {
-      setActiveOrder(null);
-      setError('Заказ не найден');
+  const closeTab = (tabId: string) => {
+    if (tabs.length === 1) return;
+    const newTabs = tabs.filter(t => t.id !== tabId);
+    setTabs(newTabs);
+    if (activeTabId === tabId) {
+      setActiveTabId(newTabs[0].id);
     }
   };
 
-  const handleFulfill = (index: number, status: 'accepted' | 'returned') => {
-    if (!order) return;
-    updateOrderItemFulfillment(order.id, index, status);
-    setActiveOrder(prev => {
-      if (!prev) return prev;
-      const newItems = [...prev.items];
-      newItems[index] = { ...newItems[index], fulfillmentStatus: status };
-      return { ...prev, items: newItems };
+  const updateTab = (tabId: string, updates: Partial<Tab>) => {
+    setTabs(tabs.map(t => t.id === tabId ? { ...t, ...updates } : t));
+  };
+
+  const handleSearch = (e: React.FormEvent, tabId: string) => {
+    e.preventDefault();
+    const tab = tabs.find(t => t.id === tabId);
+    if (!tab || tab.code.length !== 4) return;
+    
+    const found = orders.find(o => o.code === tab.code);
+    if (found) {
+      updateTab(tabId, { order: found, error: '' });
+    } else {
+      updateTab(tabId, { error: 'Заказ не найден' });
+    }
+  };
+
+  const handleFulfill = (index: number, status: 'accepted' | 'returned', tabId: string) => {
+    const tab = tabs.find(t => t.id === tabId);
+    if (!tab?.order) return;
+    updateOrderItemFulfillment(tab.order.id, index, status);
+    updateTab(tabId, { 
+      order: { ...tab.order, items: tab.order.items.map((item, i) => i === index ? { ...item, fulfillmentStatus: status } : item) } as Order 
     });
-    if (order.status === 'in_transit' && status === 'accepted') {
-      const allAccepted = newItems.every((i: any) => i.fulfillmentStatus === 'accepted');
-      if (allAccepted) {
-        updateOrderStatus(order.id, 'arrived');
+    if (status === 'accepted') {
+      const newItems = tab.order.items.map((item, i) => i === index ? { ...item, fulfillmentStatus: status } : item);
+      const allAccepted = newItems.every(i => i.fulfillmentStatus === 'accepted');
+      if (allAccepted && tab.order.status === 'in_transit') {
+        updateOrderStatus(tab.order.id, 'arrived');
       }
     }
   };
 
-  const calculateTotal = () => {
-    if (!activeOrder) return 0;
-    return activeOrder.items.reduce((sum, item) => {
+  const calculateTotal = (tab: Tab) => {
+    if (!tab.order) return 0;
+    return tab.order.items.reduce((sum, item) => {
       if (item.fulfillmentStatus !== 'returned') {
         const hasDiscount = item.product.discount && item.product.discount > 0 &&
           (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
@@ -78,278 +104,200 @@ export default function POS() {
     }, 0);
   };
 
-  const handlePayment = () => {
-    if (!activeOrder) return;
-    const hasAny = activeOrder.items.some(item => item.fulfillmentStatus === 'accepted' || item.fulfillmentStatus === 'returned');
+  const handlePayment = (tabId: string) => {
+    const tab = tabs.find(t => t.id === tabId);
+    if (!tab?.order) return;
+    
+    const hasAny = tab.order.items.some(item => item.fulfillmentStatus === 'accepted' || item.fulfillmentStatus === 'returned');
     if (!hasAny) {
-      alert('Выберите товар');
+      updateTab(tabId, { error: 'Выберите товар' });
       return;
     }
 
-    const hasRejected = activeOrder.items.some(item => item.fulfillmentStatus === 'returned');
-    const hasAccepted = activeOrder.items.some(item => item.fulfillmentStatus === 'accepted');
+    const hasRejected = tab.order.items.some(item => item.fulfillmentStatus === 'returned');
+    const hasAccepted = tab.order.items.some(item => item.fulfillmentStatus === 'accepted');
 
-    if (order?.status === 'issued') {
-      updateOrderStatus(activeOrder.id, 'returned');
-      setActiveOrder(null);
-      setCode('');
-      setShowPayment(false);
-      alert('Возврат оформлен.');
-      return;
-    }
-
-    if (hasRejected && hasAccepted) {
-      archiveOrder(activeOrder.id, 'issued');
+    if (tab.order.status === 'issued') {
+      updateOrderStatus(tab.order.id, 'returned');
+    } else if (hasRejected && hasAccepted) {
+      archiveOrder(tab.order.id, 'issued');
     } else if (hasRejected && !hasAccepted) {
-      archiveOrder(activeOrder.id, 'rejected');
+      archiveOrder(tab.order.id, 'rejected');
     } else {
-      archiveOrder(activeOrder.id, 'issued');
+      archiveOrder(tab.order.id, 'issued');
     }
 
-    setActiveOrder(null);
-    setCode('');
-    setShowPayment(false);
-    alert('Заказ завершен.');
+    updateTab(tabId, { order: null, code: '', showPayment: false, cashReceived: '' });
   };
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.24))] gap-6 p-8 bg-gradient-to-br from-gray-50 to-white">
-      <div className="flex-1 flex flex-col gap-6">
-        <div className="bg-white rounded-[2rem] p-8 border border-[#F0F0F0] shadow-lg shadow-gray-200/50">
-          <h1 className="text-2xl font-bold mb-6 flex items-center gap-3">
-            <span className="bg-gradient-to-r from-[#2D3436] to-[#1a1f21] bg-clip-text text-transparent">Кассовый терминал</span>
-          </h1>
-          <form onSubmit={handleSearch} className="flex gap-4">
-            <input
-              type="text"
-              maxLength={4}
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-              placeholder="Код заказа (0000)"
-              className="flex-1 text-2xl tracking-[0.5em] font-bold bg-gradient-to-br from-gray-50 to-gray-100/50 border-2 border-[#E8E8E8] rounded-2xl py-5 px-6 outline-none focus:border-[#2D3436] focus:ring-4 focus:ring-[#2D3436]/10 transition-all"
-            />
-            <button
-              type="submit"
-              disabled={code.length !== 4}
-              className="bg-gradient-to-r from-[#2D3436] to-[#1a1f21] text-white px-8 rounded-2xl font-bold hover:shadow-xl hover:shadow-[#2D3436]/20 transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              <Search className="w-5 h-5" />
-              Найти
+    <div className="flex flex-col h-[calc(100vh-theme(spacing.24)) bg-gray-50">
+      {/* Tab bar */}
+      <div className="flex items-center gap-1 px-4 py-2 bg-white border-b border-gray-200 overflow-x-auto">
+        {tabs.map(tab => (
+          <div key={tab.id} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
+            tab.id === activeTabId ? 'bg-[#2D3436] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}>
+            <button onClick={() => setActiveTabId(tab.id)} className="flex items-center gap-2">
+              {tab.order ? <Package className="w-4 h-4" /> : <Clock3 className="w-4 h-4" />}
+              {tab.order?.code || 'Новый'}
             </button>
-          </form>
-          {error && <p className="text-red-500 font-medium mt-4 animate-pulse">{error}</p>}
-        </div>
-
-        {activeOrder && order?.status === 'in_transit' && !order.items.some(i => i.fulfillmentStatus) && (
-          <div className="flex-1 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-[2rem] border-2 border-yellow-200 shadow-lg flex flex-col items-center justify-center p-8 text-center gap-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center shadow-lg">
-              <Truck className="w-10 h-10 text-yellow-600" />
-            </div>
-            <p className="text-xl font-bold text-yellow-800">Заказ еще в пути</p>
-            <p className="text-sm text-yellow-600 bg-white/50 px-4 py-2 rounded-xl">Сначала примите заказ в разделе "Заказы"</p>
+            {tabs.length > 1 && (
+              <button onClick={() => closeTab(tab.id)} className="hover:bg-white/20 rounded p-0.5">
+                <X className="w-3 h-3" />
+              </button>
+            )}
           </div>
-        )}
-
-        {activeOrder && (
-          (order?.status === 'in_transit' && order.items.every(i => i.fulfillmentStatus === 'accepted')) ||
-          order?.status === 'arrived' ||
-          order?.status === 'issued'
-        ) && (
-          <div className="bg-white rounded-[2rem] p-8 border border-[#F0F0F0] shadow-lg shadow-gray-200/50 flex-1 flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between mb-6 pb-6 border-b-2 border-dashed border-[#E8E8E8]">
-              <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-[#2D3436] to-[#1a1f21] bg-clip-text text-transparent">Сборка заказа</h2>
-                {order?.issuedAt && (
-                  <p className="text-sm text-green-600 mt-2 flex items-center gap-2 bg-green-50 px-3 py-1 rounded-lg w-fit">
-                    <CheckCircle className="w-4 h-4" />
-                    Выдан: {new Date(order.issuedAt).toLocaleString('ru-RU')}
-                  </p>
-                )}
-                {order?.status === 'issued' && order?.issuedAt && (
-                  <p className="text-sm text-orange-600 mt-2 flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-lg w-fit">
-                    <Clock className="w-4 h-4" />
-                    На возврат осталось: {timeLeft}
-                  </p>
-                )}
-              </div>
-              <div className="bg-gradient-to-br from-[#2D3436] to-[#1a1f21] text-white px-6 py-3 rounded-2xl font-bold font-mono text-xl tracking-widest shadow-lg">
-                {activeOrder.code}
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-              {activeOrder.items.map((item, index) => {
-                const isAccepted = item.fulfillmentStatus === 'accepted';
-                const isPending = !item.fulfillmentStatus;
-                return (
-                  <div
-                    key={index}
-                    className={`flex gap-5 p-5 rounded-2xl border-2 transition-all duration-300 ${
-                      item.fulfillmentStatus === 'returned'
-                        ? 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200 opacity-75'
-                        : isAccepted
-                        ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-lg shadow-green-200/30'
-                        : 'bg-gray-50 border-gray-200 opacity-60'
-                    }`}
-                  >
-                    <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl overflow-hidden shrink-0 border-2 border-[#F0F0F0] shadow-sm">
-                      {item.product.image ? (
-                        <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-3xl">📦</div>
-                      )}
-                    </div>
-
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div>
-                        <h4 className="font-bold text-xl text-[#1a1a1a]">{item.product.name}</h4>
-                        <p className="text-gray-500 font-medium">
-                          {item.quantity} шт. × {item.product.price} ₽
-                          {item.selectedSize && <span className="ml-2 bg-[#2D3436]/10 px-2 py-0.5 rounded text-xs">Размер: {item.selectedSize}</span>}
-                        </p>
-                      </div>
-
-                      <div className="flex gap-3 mt-3">
-                        {order?.status !== 'issued' && !isPending && (
-                          <button
-                            type="button"
-                            onClick={() => handleFulfill(index, 'accepted')}
-                            className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg hover:shadow-green-500/30 hover:scale-105 active:scale-95"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            Выдать
-                          </button>
-                        )}
-                        {order?.status !== 'issued' && !isPending && (
-                          <button
-                            type="button"
-                            onClick={() => handleFulfill(index, 'returned')}
-                            className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white hover:shadow-lg hover:shadow-red-500/30 hover:scale-105 active:scale-95"
-                          >
-                            <XCircle className="w-4 h-4" />
-                            Отказ
-                          </button>
-                        )}
-                        {order?.status === 'issued' && isAccepted && (
-                          <button
-                            type="button"
-                            onClick={() => handleFulfill(index, 'returned')}
-                            className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white hover:shadow-lg hover:shadow-red-500/30 hover:scale-105 active:scale-95"
-                          >
-                            <RotateCcw className="w-4 h-4" />
-                            Вернуть
-                          </button>
-                        )}
-                        {isPending && (
-                          <span className="text-sm text-gray-400 py-2.5">Не поступил</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="font-bold text-2xl flex items-center">
-                      {(() => {
-                        const hasDiscount = item.product.discount && item.product.discount > 0 &&
-                          (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
-                        const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
-                        return (
-                          <span className={item.fulfillmentStatus === 'returned' ? 'line-through text-gray-400' : 'text-[#2D3436]'}>
-                            {price * item.quantity} ₽
-                            {hasDiscount && <span className="text-xs ml-1 text-green-600">(-{item.product.discount}%)</span>}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {!activeOrder && (
-          <div className="flex-1 bg-gradient-to-br from-white to-gray-50 rounded-[2rem] border-2 border-dashed border-[#E8E8E8] shadow-lg flex flex-col items-center justify-center text-gray-400 p-8 text-center gap-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center shadow-inner">
-              <User className="w-12 h-12 opacity-30" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-gray-500">Введите код заказа для начала работы</p>
-              <p className="text-sm text-gray-400 mt-2">Код указан в чеке клиента</p>
-            </div>
-          </div>
-        )}
+        ))}
+        <button onClick={addTab} className="p-2 hover:bg-gray-100 rounded-lg">
+          <Plus className="w-5 h-5 text-gray-400" />
+        </button>
       </div>
 
-      <div className="w-96 bg-gradient-to-br from-[#2D3436] to-[#1a1f21] text-white rounded-[2rem] p-8 flex flex-col shadow-2xl shadow-[#2D3436]/30 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-green-500/10 rounded-full translate-y-1/2 -translate-x-1/2" />
-
-        <h3 className="text-xl font-bold mb-8 flex items-center gap-3 text-gray-200 relative z-10">
-          <Banknote className="w-6 h-6 text-green-400" />
-          Оплата наличными
-        </h3>
-
-        {activeOrder && (order?.status === 'arrived' || order?.status === 'issued' || (order?.status === 'in_transit' && order.items.every(i => i.fulfillmentStatus === 'accepted'))) ? (
-          <>
-            <div className="flex-1 relative z-10">
-              <div className="bg-gradient-to-br from-white/10 to-white/5 p-8 rounded-3xl mb-6 border border-white/10">
-                <span className="text-sm font-medium text-gray-400 uppercase tracking-wider block mb-2 flex items-center gap-2">
-                  <ArrowRight className="w-4 h-4" />
-                  К оплате
-                </span>
-                <span className="text-6xl font-black tabular-nums tracking-tight bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">{calculateTotal()} ₽</span>
-              </div>
-
-              <div className="space-y-4 text-sm text-gray-400">
-                <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl">
-                  <span className="font-medium">Товаров принято</span>
-                  <span className="text-white font-bold text-lg bg-green-500/20 px-3 py-1 rounded-lg">
-                    {activeOrder.items.filter(i => i.fulfillmentStatus !== 'returned').reduce((acc, i) => acc + i.quantity, 0)} шт.
-                  </span>
-                </div>
-                <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl">
-                  <span className="font-medium">Отказ</span>
-                  <span className="text-white font-bold text-lg bg-red-500/20 px-3 py-1 rounded-lg">
-                    {activeOrder.items.filter(i => i.fulfillmentStatus === 'returned').reduce((acc, i) => acc + i.quantity, 0)} шт.
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {!showPayment ? (
-              <button
-                onClick={() => setShowPayment(true)}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white py-5 rounded-2xl font-bold text-lg transition-all duration-300 hover:shadow-xl hover:shadow-green-500/30 active:scale-[0.98] relative z-10"
-              >
-                Принять оплату
+      {/* Content for active tab */}
+      <div className="flex-1 flex gap-6 p-8 overflow-hidden">
+        <div className="flex-1 flex flex-col gap-6">
+          {/* Search */}
+          <div className="bg-white rounded-[2rem] p-6 border border-[#F0F0F0] shadow">
+            <form onSubmit={(e) => handleSearch(e, activeTabId)} className="flex gap-4">
+              <input
+                type="text"
+                maxLength={4}
+                value={activeTab.code}
+                onChange={(e) => updateTab(activeTabId, { code: e.target.value.replace(/\D/g, '') })}
+                placeholder="Код заказа"
+                className="flex-1 text-2xl tracking-[0.5em] font-bold bg-gray-50 border-2 border-[#E8E8E8] rounded-2xl py-4 px-6 outline-none focus:border-[#2D3436]"
+              />
+              <button type="submit" disabled={activeTab.code.length !== 4} className="bg-[#2D3436] text-white px-8 rounded-2xl font-bold hover:bg-black disabled:opacity-50">
+                <Search className="w-5 h-5" />
               </button>
-            ) : (
-              <div className="mt-6 space-y-4 animate-in slide-in-from-bottom-4 relative z-10">
-                <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/10 p-6 rounded-2xl text-center border border-green-500/30">
-                  <p className="font-medium text-lg mb-2 text-white">Подтвердите получение</p>
-                  <p className="text-3xl font-black text-green-400">{calculateTotal()} ₽</p>
+            </form>
+            {activeTab.error && <p className="text-red-500 font-medium mt-3">{activeTab.error}</p>}
+          </div>
+
+          {/* Order items */}
+          {activeTab.order && activeTab.order.status === 'in_transit' && !activeTab.order.items.every(i => i.fulfillmentStatus) && (
+            <div className="flex-1 bg-yellow-50 rounded-[2rem] border-2 border-yellow-200 p-8 flex items-center justify-center">
+              <p className="text-xl font-bold text-yellow-800">Выберите товары</p>
+              <p className="text-sm text-yellow-600 mt-2">Нажмите "Выдать" или "Отказ" для каждого товара</p>
+            </div>
+          )}
+
+          {activeTab.order && (
+            ((activeTab.order.status === 'in_transit' && activeTab.order.items.every(i => i.fulfillmentStatus)) ||
+             activeTab.order.status === 'arrived' ||
+             activeTab.order.status === 'issued'
+            ) && activeTab.order.items.every(i => i.fulfillmentStatus) && (
+              <div className="flex-1 bg-white rounded-[2rem] p-6 border border-[#F0F0F0] shadow overflow-y-auto">
+                <div className="flex justify-between items-center mb-6 pb-6 border-b border-dashed border-gray-200">
+                  <div>
+                    <h2 className="text-2xl font-bold">Сборка заказа {activeTab.order.code}</h2>
+                    {activeTab.order.status === 'issued' && activeTab.order.issuedAt && (
+                      <p className="text-sm text-orange-600 mt-1">На возврат осталось: {timeLeft}</p>
+                    )}
+                  </div>
+                  <div className="text-3xl font-black bg-gray-100 px-6 py-3 rounded-xl">{activeTab.order.code}</div>
                 </div>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setShowPayment(false)}
-                    className="flex-1 bg-white/10 hover:bg-white/20 py-4 rounded-xl font-bold transition-all"
-                  >
-                    Отмена
-                  </button>
-                  <button
-                    onClick={handlePayment}
-                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-xl hover:shadow-green-500/40 text-white py-4 rounded-xl font-bold transition-all shadow-lg"
-                  >
-                    Готово
-                  </button>
+
+                <div className="space-y-4">
+                  {activeTab.order.items.map((item, index) => {
+                    const isPending = !item.fulfillmentStatus;
+                    const isAccepted = item.fulfillmentStatus === 'accepted';
+                    return (
+                      <div key={index} className={`flex gap-4 p-4 rounded-xl border-2 ${
+                        item.fulfillmentStatus === 'returned' ? 'bg-red-50 border-red-200' : isAccepted ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                      }`}>
+                        <div className="w-16 h-16 bg-white rounded-lg overflow-hidden shrink-0">
+                          {item.product.image && <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-bold">{item.product.name}</h4>
+                          <p className="text-gray-500">{item.quantity} шт. × {item.product.price} ₽</p>
+                        </div>
+                        <div className="flex gap-2">
+                          {activeTab.order.status !== 'issued' && isPending && (
+                            <button onClick={() => handleFulfill(index, 'accepted', activeTabId)} className="px-4 py-2 bg-green-500 text-white rounded-lg font-bold hover:bg-green-600">
+                              Выдать
+                            </button>
+                          )}
+                          {activeTab.order.status !== 'issued' && isPending && (
+                            <button onClick={() => handleFulfill(index, 'returned', activeTabId)} className="px-4 py-2 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600">
+                              Отказ
+                            </button>
+                          )}
+                          {isAccepted && <span className="px-4 py-2 bg-green-100 text-green-600 rounded-lg font-bold">Выдан</span>}
+                          {item.fulfillmentStatus === 'returned' && <span className="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-bold">Возврат</span>}
+                        </div>
+                        <div className="font-bold text-xl">{item.product.price * item.quantity} ₽</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            )}
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center opacity-30 text-center px-8 relative z-10">
-            <p className="text-lg font-medium">Выберите заказ для проведения оплаты</p>
-          </div>
-        )}
+            )
+          )}
+
+          {!activeTab.order && (
+            <div className="flex-1 flex items-center justify-center text-gray-400">
+              <p>Введите код заказа</p>
+            </div>
+          )}
+        </div>
+
+        {/* Payment panel */}
+        <div className="w-80 bg-[#2D3436] text-white rounded-2xl p-6 flex flex-col">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Banknote className="w-5 h-5 text-green-400" /> Оплата
+          </h3>
+
+          {activeTab.order && (activeTab.order.status === 'arrived' || activeTab.order.status === 'issued' || (activeTab.order.status === 'in_transit' && activeTab.order.items.every(i => i.fulfillmentStatus))) ? (
+            <>
+              <div className="flex-1">
+                <div className="bg-white/10 p-6 rounded-xl mb-4">
+                  <span className="text-sm text-gray-400 block mb-2">К оплате</span>
+                  <span className="text-4xl font-black text-green-400">{calculateTotal(activeTab)} ₽</span>
+                </div>
+                <div className="space-y-2 text-sm text-gray-400">
+                  <div className="flex justify-between"><span>Выдано</span><span>{activeTab.order.items.filter(i => i.fulfillmentStatus !== 'returned').length} шт.</span></div>
+                  <div className="flex justify-between"><span>Возврат</span><span>{activeTab.order.items.filter(i => i.fulfillmentStatus === 'returned').length} шт.</span></div>
+                </div>
+              </div>
+
+              {!activeTab.showPayment ? (
+                <button onClick={() => updateTab(activeTabId, { showPayment: true })} className="w-full bg-green-500 py-4 rounded-xl font-bold hover:bg-green-600">
+                  Принять оплату
+                </button>
+              ) : (
+                <div className="space-y-4">
+                  <input
+                    type="number"
+                    value={activeTab.cashReceived}
+                    onChange={(e) => updateTab(activeTabId, { cashReceived: e.target.value })}
+                    placeholder="Получено"
+                    className="w-full bg-white text-black text-2xl font-bold py-4 px-4 rounded-xl text-center"
+                    autoFocus
+                  />
+                  {parseInt(activeTab.cashReceived) > 0 && (
+                    <div className="flex justify-between text-lg">
+                      <span>Сдача:</span>
+                      <span className={`font-bold ${parseInt(activeTab.cashReceived) - calculateTotal(activeTab) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {Math.abs(parseInt(activeTab.cashReceived) - calculateTotal(activeTab))} ₽
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <button onClick={() => updateTab(activeTabId, { showPayment: false, cashReceived: '' })} className="flex-1 bg-white/10 py-3 rounded-xl font-bold">Отмена</button>
+                    <button onClick={() => handlePayment(activeTabId)} disabled={parseInt(activeTab.cashReceived || '0') < calculateTotal(activeTab)} className="flex-1 bg-green-500 py-3 rounded-xl font-bold disabled:opacity-50">Готово</button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-center text-gray-400">
+              <p>Выберите заказ для оплаты</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

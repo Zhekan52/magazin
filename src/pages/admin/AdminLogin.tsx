@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { useStore } from '../../store';
 import { Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 
 export default function AdminLogin() {
-  const { loginAdmin } = useStore();
+  const { loginAdmin, isAdminAuthenticated } = useStore();
   const navigate = useNavigate();
+  
+  if (isAdminAuthenticated) {
+    return <Navigate to="/admin" replace />;
+  }
+  
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');

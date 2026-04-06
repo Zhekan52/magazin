@@ -4,7 +4,7 @@ import { useStore } from '../../store';
 import { CheckCircle2, ChevronLeft, Tag, X } from 'lucide-react';
 
 export default function Checkout() {
-  const { cart, addOrder, clearCart, applyPromoCode, removePromoCode, appliedPromoCode } = useStore();
+  const { cart, addOrder, clearCart, applyPromoCode, removePromoCode, getAppliedPromo } = useStore();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [successCode, setSuccessCode] = useState<string | null>(null);
@@ -23,7 +23,8 @@ export default function Checkout() {
     return sum + price * item.quantity;
   }, 0);
 
-  const promoDiscount = appliedPromoCode ? (subtotal * appliedPromoCode.discount / 100) : 0;
+  const appliedPromo = getAppliedPromo();
+  const promoDiscount = appliedPromo ? (subtotal * appliedPromo.discount / 100) : 0;
   const total = subtotal - promoDiscount;
 
   const handleApplyPromo = () => {
@@ -117,11 +118,11 @@ export default function Checkout() {
             <h2 className="text-lg font-bold">Промокод</h2>
           </div>
           
-          {appliedPromoCode ? (
+          {appliedPromo ? (
             <div className="flex items-center justify-between bg-green-50 p-4 rounded-xl">
               <div>
-                <span className="font-bold text-green-600">{appliedPromoCode.code}</span>
-                <span className="text-green-600 ml-2">-{appliedPromoCode.discount}%</span>
+                <span className="font-bold text-green-600">{appliedPromo.code}</span>
+                <span className="text-green-600 ml-2">-{appliedPromo.discount}%</span>
               </div>
               <button onClick={handleRemovePromo} className="p-2 hover:bg-green-100 rounded-lg">
                 <X className="w-4 h-4 text-green-600" />

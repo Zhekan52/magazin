@@ -218,6 +218,20 @@ export default function Dashboard() {
             })}
             </div>
 
+            {order.status === 'in_transit' && (
+              <button
+                onClick={() => {
+                  order.items.forEach((_, idx) => {
+                    updateOrderItemFulfillment(order.id, idx, 'accepted');
+                  });
+                  updateOrderStatus(order.id, 'arrived');
+                }}
+                className="w-full py-3 rounded-xl font-bold bg-blue-500 text-white hover:bg-blue-600 transition-colors mb-4"
+              >
+                Принять все
+              </button>
+            )}
+
             <div className="mt-auto">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500">К оплате</span>
@@ -234,20 +248,6 @@ export default function Dashboard() {
                 </span>
               </div>
             </div>
-
-            {order.status === 'in_transit' && (
-              <button
-                onClick={() => {
-                  order.items.forEach((_, idx) => {
-                    updateOrderItemFulfillment(order.id, idx, 'accepted');
-                  });
-                  updateOrderStatus(order.id, 'arrived');
-                }}
-                className="w-full py-3 rounded-xl font-bold bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-              >
-                Принять все
-              </button>
-            )}
           </div>
         ))}
 

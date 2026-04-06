@@ -2,10 +2,12 @@ import { HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import CustomerApp from './pages/customer/CustomerApp';
 import AdminApp from './pages/admin/AdminApp';
 import AdminLogin from './pages/admin/AdminLogin';
+import { useStore } from './store';
 
 function AppLayout() {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith('/admin');
+  const isAdminAuthenticated = useStore((state) => state.isAdminAuthenticated);
 
   return (
     <div className="min-h-screen bg-white text-[#2D3436] font-sans selection:bg-gray-200">
@@ -19,7 +21,7 @@ function AppLayout() {
             Клиент
           </Link>
           <Link
-            to="/admin/login"
+            to={isAdminAuthenticated ? '/admin' : '/admin/login'}
             className={`px-3 py-2 font-medium ${isAdmin ? 'bg-gray-100 text-black' : 'text-gray-500 hover:bg-gray-50'}`}
           >
             Админ
