@@ -134,13 +134,23 @@ export default function POS() {
           {error && <p className="text-red-500 font-medium mt-4 animate-pulse">{error}</p>}
         </div>
 
-        {activeOrder && order?.status === 'in_transit' && (
+        {activeOrder && order?.status === 'in_transit' && !order.items.some(i => i.fulfillmentStatus === 'accepted') && (
           <div className="flex-1 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-[2rem] border-2 border-yellow-200 shadow-lg flex flex-col items-center justify-center p-8 text-center gap-4">
             <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center shadow-lg">
               <Truck className="w-10 h-10 text-yellow-600" />
             </div>
             <p className="text-xl font-bold text-yellow-800">Заказ еще в пути</p>
             <p className="text-sm text-yellow-600 bg-white/50 px-4 py-2 rounded-xl">Сначала примите заказ в разделе "Заказы"</p>
+          </div>
+        )}
+
+        {activeOrder && order?.status === 'in_transit' && order.items.some(i => i.fulfillmentStatus === 'accepted') && (
+          <div className="flex-1 bg-gradient-to-br from-green-50 to-emerald-50 rounded-[2rem] border-2 border-green-200 shadow-lg flex flex-col items-center justify-center p-8 text-center gap-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center shadow-lg">
+              <CheckCircle className="w-10 h-10 text-green-600" />
+            </div>
+            <p className="text-xl font-bold text-green-800">Товар поступил</p>
+            <p className="text-sm text-green-600 bg-white/50 px-4 py-2 rounded-xl">Можно выдать</p>
           </div>
         )}
 
