@@ -1,49 +1,76 @@
-import { HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import CustomerApp from './pages/customer/CustomerApp';
-import AdminApp from './pages/admin/AdminApp';
-import AdminLogin from './pages/admin/AdminLogin';
-import { useStore } from './store';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { Monitor, Shield, CreditCard } from 'lucide-react';
 
-function AppLayout() {
-  const location = useLocation();
-  const isAdmin = location.pathname.startsWith('/admin');
-  const isAdminAuthenticated = useStore((state) => state.isAdminAuthenticated);
+import CustomerTerminal from './pages/CustomerTerminal';
+import AdminPanel from './pages/AdminPanel';
+import CashierPOS from './pages/CashierPOS';
 
+function Home() {
+  const navigate = useNavigate();
+  
   return (
-    <div className="min-h-screen bg-white text-[#2D3436] font-sans selection:bg-gray-200">
-      {/* Admin/Client Switcher */}
-      <div className="fixed bottom-4 left-4 z-50">
-        <div className="bg-white/90 backdrop-blur border border-[#F0F0F0] rounded-full shadow-sm flex overflow-hidden text-xs">
-          <Link
-            to="/customer"
-            className={`px-3 py-2 font-medium ${!isAdmin ? 'bg-gray-100 text-black' : 'text-gray-500 hover:bg-gray-50'}`}
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="max-w-4xl w-full">
+        <div className="text-center mb-12 animate-fade-in-down">
+          <h1 className="text-4xl font-extrabold text-primary mb-4">Retail Terminal</h1>
+          <p className="text-lg text-secondary">Выберите интерфейс для работы</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <button 
+            onClick={() => navigate('/terminal')} 
+            className="card card--interactive flex flex-col items-center gap-4 text-center animate-fade-in-up stagger-1"
           >
-            Клиент
-          </Link>
-          <Link
-            to={isAdminAuthenticated ? '/admin' : '/admin/login'}
-            className={`px-3 py-2 font-medium ${isAdmin ? 'bg-gray-100 text-black' : 'text-gray-500 hover:bg-gray-50'}`}
+            <div className="w-16 h-16 flex items-center justify-center bg-primary-light text-primary rounded-2xl">
+              <Monitor size={32} />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-primary mb-2">Терминал</h2>
+              <p className="text-sm text-secondary">Интерфейс покупателя для заказа</p>
+            </div>
+          </button>
+          
+          <button 
+            onClick={() => navigate('/admin')} 
+            className="card card--interactive flex flex-col items-center gap-4 text-center animate-fade-in-up stagger-2"
           >
-            Админ
-          </Link>
+            <div className="w-16 h-16 flex items-center justify-center bg-purple-100 text-purple-600 rounded-2xl">
+              <Shield size={32} />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-primary mb-2">Админ-панель</h2>
+              <p className="text-sm text-secondary">Управление товарами и скидками</p>
+            </div>
+          </button>
+          
+          <button 
+            onClick={() => navigate('/pos')} 
+            className="card card--interactive flex flex-col items-center gap-4 text-center animate-fade-in-up stagger-3"
+          >
+            <div className="w-16 h-16 flex items-center justify-center bg-green-100 text-green-600 rounded-2xl">
+              <CreditCard size={32} />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-primary mb-2">Касса (Выдача)</h2>
+              <p className="text-sm text-secondary">Оплата и выдача заказов</p>
+            </div>
+          </button>
         </div>
       </div>
-
-      <Routes>
-        <Route path="/customer/*" element={<CustomerApp />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/*" element={<AdminApp />} />
-        <Route path="*" element={<CustomerApp />} />
-      </Routes>
     </div>
   );
 }
 
 function App() {
   return (
-    <HashRouter>
-      <AppLayout />
-    </HashRouter>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/terminal/*" element={<CustomerTerminal />} />
+        <Route path="/admin/*" element={<AdminPanel />} />
+        <Route path="/pos" element={<CashierPOS />} />
+      </Routes>
+    </Router>
   );
 }
 
