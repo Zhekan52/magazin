@@ -266,7 +266,7 @@ export default function Catalog() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="flex items-center justify-between mt-2 whitespace-nowrap">
+                  <div className="flex items-center justify-between mt-2 whitespace-nowrap z-10 relative">
                     <div className="flex items-center gap-1">
                       {(item.product.discount && item.product.discount > 0 && (!item.product.discountEndDate || item.product.discountEndDate > Date.now())) ? (
                         <>
@@ -278,7 +278,7 @@ export default function Catalog() {
                         <span className="font-bold text-[#2D3436]">{getItemPrice(item)} ₽</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-[#E8E8E8] shadow-sm">
+                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-[#E8E8E8] shadow-sm -mr-2 -mb-2">
                       <button 
                         onClick={() => {
                           if (item.quantity > 1) updateCartQuantity(item.product.id, item.quantity - 1, item.selectedSize);
