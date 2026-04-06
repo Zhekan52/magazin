@@ -266,17 +266,19 @@ export default function Catalog() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="flex items-center justify-between mt-2">
-                    {(item.product.discount && item.product.discount > 0 && (!item.product.discountEndDate || item.product.discountEndDate > Date.now())) ? (
-                      <div className="flex items-center gap-1">
-                        <span className="font-bold text-[#2D3436]">{getItemPrice(item)} ₽</span>
-                        <span className="text-xs text-gray-400 line-through">{item.product.price} ₽</span>
-                        <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">-{item.product.discount}%</span>
-                      </div>
-                    ) : (
-                      <span className="font-bold text-[#2D3436]">{getItemPrice(item)} ₽</span>
-                    )}
-                    <div className="flex items-center bg-gray-100 rounded-lg overflow-hidden">
+                  <div className="flex items-center justify-between mt-2 min-w-0">
+                    <div className="flex items-center gap-1 min-w-0">
+                      {(item.product.discount && item.product.discount > 0 && (!item.product.discountEndDate || item.product.discountEndDate > Date.now())) ? (
+                        <>
+                          <span className="font-bold text-[#2D3436] text-sm">{getItemPrice(item)} ₽</span>
+                          <span className="text-xs text-gray-400 line-through">{item.product.price} ₽</span>
+                          <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded shrink-0">-{item.product.discount}%</span>
+                        </>
+                      ) : (
+                        <span className="font-bold text-[#2D3436] text-sm">{getItemPrice(item)} ₽</span>
+                      )}
+                    </div>
+                    <div className="flex items-center bg-gray-100 rounded-lg overflow-hidden shrink-0">
                       <button 
                         onClick={() => {
                           if (item.quantity > 1) updateCartQuantity(item.product.id, item.quantity - 1, item.selectedSize);

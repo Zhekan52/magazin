@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../../store';
-import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, LogOut, Trash2, DoorClosed, DoorOpen, X, Tag } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, LogOut, Trash2, DoorClosed, DoorOpen, X, Tag, Package, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Settings() {
@@ -15,6 +15,18 @@ export default function Settings() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [closeReason, setCloseReason] = useState(storeClosedReason);
+  const [resetOptions, setResetOptions] = useState({ products: false, orders: false });
+
+  const handleReset = () => {
+    if (resetOptions.products) {
+      useStore.setState((state) => ({ products: [] }));
+    }
+    if (resetOptions.orders) {
+      useStore.setState((state) => ({ orders: [], usedCodes: [] }));
+    }
+    setShowResetConfirm(false);
+    alert('Данные сброшены');
+  };
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,13 +245,33 @@ export default function Settings() {
             </div>
             <div>
               <h2 className="text-xl font-bold">Сброс данных</h2>
-              <p className="text-gray-500 text-sm">Удалить все заказы и очистить систему</p>
+              <p className="text-gray-500 text-sm">Выберите что удалить</p>
             </div>
           </div>
 
           {showResetConfirm ? (
-            <div className="bg-red-50 p-4 rounded-2xl">
-              <p className="text-red-600 font-medium mb-4">Вы уверены? Все данные будут удалены безвозвратно.</p>
+            <div className="bg-red-50 p-4 rounded-2xl space-y-4">
+              <label className="flex items-center gap-3 p-3 bg-white rounded-xl cursor-pointer hover:bg-gray-50">
+                <input 
+                  type="checkbox" 
+                  checked={resetOptions.products}
+                  onChange={(e) => setResetOptions({ ...resetOptions, products: e.target.checked })}
+                  className="w-5 h-5 rounded"
+                />
+                <Package className="w-5 h-5 text-gray-500" />
+                <span>Товары</span>
+              </label>
+              <label className="flex items-center gap-3 p-3 bg-white rounded-xl cursor-pointer hover:bg-gray-50">
+                <input 
+                  type="checkbox" 
+                  checked={resetOptions.orders}
+                  onChange={(e) => setResetOptions({ ...resetOptions, orders: e.target.checked })}
+                  className="w-5 h-5 rounded"
+                />
+                <FileText className="w-5 h-5 text-gray-500" />
+                <span>Заказы</span>
+              </label>
+              <p className="text-red-600 text-sm">Выберите хотя бы один вариант</p>
               <div className="flex gap-4">
                 <button
                   onClick={() => setShowResetConfirm(false)}
@@ -248,14 +280,11 @@ export default function Settings() {
                   Отмена
                 </button>
                 <button
-                  onClick={() => {
-                    resetAllData();
-                    setShowResetConfirm(false);
-                    alert('Данные сброшены');
-                  }}
-                  className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600"
+                  onClick={handleReset}
+                  disabled={!resetOptions.products && !resetOptions.orders}
+                  className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 disabled:opacity-50"
                 >
-                  Да, сбросить
+                  Сбросить
                 </button>
               </div>
             </div>
@@ -264,7 +293,7 @@ export default function Settings() {
               onClick={() => setShowResetConfirm(true)}
               className="w-full bg-red-50 text-red-600 py-4 rounded-2xl font-bold hover:bg-red-100 transition-colors"
             >
-              Сбросить все данные
+              Сбросить данные
             </button>
           )}
         </div>

@@ -268,15 +268,15 @@ export const useStore = create<AppState>()(
         const order: Order = {
           ...orderData,
           id,
-          code,
+          code: orderData.code || code,
           createdAt: Date.now(),
         };
         set((state) => ({ 
           orders: [...state.orders, order],
-          usedCodes: [...state.usedCodes, code]
+          usedCodes: [...state.usedCodes, orderData.code || code]
         }));
         get().syncToFirebase();
-        return id;
+        return { id, code: orderData.code || code };
       },
       updateOrderStatus: (id, status) => {
         set((state) => ({

@@ -23,20 +23,17 @@ export default function Checkout() {
   const handleCheckout = () => {
     setIsProcessing(true);
     setTimeout(() => {
-      // Generate 4 digit code
-      const code = Math.floor(1000 + Math.random() * 9000).toString();
-      
-      addOrder({
-        code,
+      const result = addOrder({
+        code: '', 
         items: cart,
         totalAmount: total,
         status: 'in_transit'
       });
       
       clearCart();
-      setSuccessCode(code);
+      setSuccessCode(result.code);
       setIsProcessing(false);
-    }, 1500); // fake delay
+    }, 1500);
   };
 
   if (successCode) {
