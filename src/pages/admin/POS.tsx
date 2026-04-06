@@ -130,21 +130,14 @@ export default function POS() {
               <Search className="w-5 h-5" />
               Найти
             </button>
-          </form>
+</form>
           {error && <p className="text-red-500 font-medium mt-4 animate-pulse">{error}</p>}
-</div>
+        </div>
 
-        {activeOrder && order?.status === 'in_transit' && !order.items.some(i => i.fulfillmentStatus === 'accepted') && (
-          <div className="flex-1 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-[2rem] border-2 border-yellow-200 shadow-lg flex flex-col items-center justify-center p-8 text-center gap-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center shadow-lg">
-              <Truck className="w-10 h-10 text-yellow-600" />
-            </div>
-            <p className="text-xl font-bold text-yellow-800">Заказ еще в пути</p>
-            <p className="text-sm text-yellow-600 bg-white/50 px-4 py-2 rounded-xl">Сначала примите заказ в разделе "Заказы"</p>
-          </div>
-        )}
-
-        {activeOrder && order?.status === 'in_transit' && order.items.some(i => i.fulfillmentStatus === 'accepted') && (
+        {activeOrder && (
+          (order?.status === 'in_transit' && order.items.some(i => i.fulfillmentStatus === 'accepted')) ||
+          order?.status === 'arrived'
+        ) && (
           <div className="bg-white rounded-[2rem] p-8 border border-[#F0F0F0] shadow-lg shadow-gray-200/50 flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between mb-6 pb-6 border-b-2 border-dashed border-[#E8E8E8]">
               <div>

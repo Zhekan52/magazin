@@ -193,7 +193,9 @@ export default function Dashboard() {
               <div className={`p-2 rounded-full ${
                 order.status === 'in_transit' ? 'bg-blue-50 text-blue-500' : 'bg-green-50 text-green-500'
               }`}>
-                {order.status === 'in_transit' ? <Truck className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
+                {order.status === 'in_transit' 
+                  ? <Truck className="w-6 h-6" /> 
+                  : <CheckCircle className="w-6 h-6" />}
               </div>
             </div>
 
