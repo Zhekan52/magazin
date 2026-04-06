@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../../store';
-import { Search, CheckCircle, XCircle, Banknote, User, Truck, Package, ArrowRight, RotateCcw, Clock } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Banknote, User, Truck, Package, ArrowRight, RotateCwb, Clock } from 'lucide-react';
 
 export default function POS() {
   const orders = useStore(state => state.orders);
@@ -37,6 +37,7 @@ export default function POS() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (code.length !== 4) return;
+    
     const found = orders.find(o => o.code === code);
     if (found) {
       setActiveOrder(found);
@@ -47,7 +48,7 @@ export default function POS() {
       setError('Заказ не найден');
     }
   };
-
+  
   const handleFulfill = (index: number, status: 'accepted' | 'returned') => {
     if (!order) return;
     updateOrderItemFulfillment(order.id, index, status);
@@ -63,7 +64,7 @@ export default function POS() {
     if (!activeOrder) return 0;
     return activeOrder.items.reduce((sum, item) => {
       if (item.fulfillmentStatus !== 'returned') {
-        const hasDiscount = item.product.discount && item.product.discount > 0 &&
+        const hasDiscount = item.product.discount && item.product.discount > 0 && 
           (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
         const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
         return sum + (price * item.quantity);
@@ -74,15 +75,17 @@ export default function POS() {
 
   const handlePayment = () => {
     if (!activeOrder) return;
+    
     const hasAny = activeOrder.items.some(item => item.fulfillmentStatus === 'accepted' || item.fulfillmentStatus === 'returned');
+    
     if (!hasAny) {
       alert('Выберите товар');
       return;
     }
-
+    
     const hasRejected = activeOrder.items.some(item => item.fulfillmentStatus === 'returned');
     const hasAccepted = activeOrder.items.some(item => item.fulfillmentStatus === 'accepted');
-
+    
     if (order?.status === 'issued') {
       updateOrderStatus(activeOrder.id, 'returned');
       setActiveOrder(null);
@@ -91,7 +94,7 @@ export default function POS() {
       alert('Возврат оформлен.');
       return;
     }
-
+    
     if (hasRejected && hasAccepted) {
       archiveOrder(activeOrder.id, 'issued');
     } else if (hasRejected && !hasAccepted) {
@@ -99,7 +102,7 @@ export default function POS() {
     } else {
       archiveOrder(activeOrder.id, 'issued');
     }
-
+    
     setActiveOrder(null);
     setCode('');
     setShowPayment(false);
@@ -188,86 +191,85 @@ export default function POS() {
                 const isAccepted = item.fulfillmentStatus === 'accepted';
                 const isPending = !item.fulfillmentStatus;
                 return (
-                  <div
-                    key={index}
-                    className={`flex gap-5 p-5 rounded-2xl border-2 transition-all duration-300 ${
-                      item.fulfillmentStatus === 'returned'
-                        ? 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200 opacity-75'
-                        : isAccepted
-                        ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-lg shadow-green-200/30'
-                        : 'bg-gray-50 border-gray-200 opacity-60'
-                    }`}
-                  >
-                    <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl overflow-hidden shrink-0 border-2 border-[#F0F0F0] shadow-sm">
-                      {item.product.image ? (
-                        <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-3xl">📦</div>
+                <div 
+                  key={index} 
+                  className={`flex gap-5 p-5 rounded-2xl border-2 transition-all duration-300 ${
+                    item.fulfillmentStatus === 'returned' 
+                      ? 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200 opacity-75' 
+                      : isAccepted
+                      ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-lg shadow-green-200/30'
+                      : 'bg-gray-50 border-gray-200 opacity-60'
+                  }`}
+                >
+                  <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl overflow-hidden shrink-0 border-2 border-[#F0F0F0] shadow-sm">
+                    {item.product.image ? (
+                      <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-3xl">📦</div>
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <h4 className="font-bold text-xl text-[#1a1a1a]">{item.product.name}</h4>
+                      <p className="text-gray-500 font-medium">
+                        {item.quantity} шт. × {item.product.price} ₽
+                        {item.selectedSize && <span className="ml-2 bg-[#2D3436]/10 px-2 py-0.5 rounded text-xs">Размер: {item.selectedSize}</span>}
+                      </p>
+                    </div>
+                    
+                    <div className="flex gap-3 mt-3">
+                      {order?.status !== 'issued' && !isPending && (
+                        <button
+                          type="button"
+                          onClick={() => handleFulfill(index, 'accepted')}
+                          className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg hover:shadow-green-500/30 hover:scale-105 active:scale-95"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          Выдать
+                        </button>
+                      )}
+                      {order?.status !== 'issued' && !isPending && (
+                        <button
+                          type="button"
+                          onClick={() => handleFulfill(index, 'returned')}
+                          className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white hover:shadow-lg hover:shadow-red-500/30 hover:scale-105 active:scale-95"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Отказ
+                        </button>
+                      )}
+                      {order?.status === 'issued' && isAccepted && (
+                        <button
+                          type="button"
+                          onClick={() => handleFulfill(index, 'returned')}
+                          className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white hover:shadow-lg hover:shadow-red-500/30 hover:scale-105 active:scale-95"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                          Вернуть
+                        </button>
+                      )}
+                      {isPending && (
+                        <span className="text-sm text-gray-400 py-2.5">Не поступил</span>
                       )}
                     </div>
-
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div>
-                        <h4 className="font-bold text-xl text-[#1a1a1a]">{item.product.name}</h4>
-                        <p className="text-gray-500 font-medium">
-                          {item.quantity} шт. × {item.product.price} ₽
-                          {item.selectedSize && <span className="ml-2 bg-[#2D3436]/10 px-2 py-0.5 rounded text-xs">Размер: {item.selectedSize}</span>}
-                        </p>
-                      </div>
-
-                      <div className="flex gap-3 mt-3">
-                        {order?.status !== 'issued' && !isPending && (
-                          <button
-                            type="button"
-                            onClick={() => handleFulfill(index, 'accepted')}
-                            className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg hover:shadow-green-500/30 hover:scale-105 active:scale-95"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            Выдать
-                          </button>
-                        )}
-                        {order?.status !== 'issued' && !isPending && (
-                          <button
-                            type="button"
-                            onClick={() => handleFulfill(index, 'returned')}
-                            className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white hover:shadow-lg hover:shadow-red-500/30 hover:scale-105 active:scale-95"
-                          >
-                            <XCircle className="w-4 h-4" />
-                            Отказ
-                          </button>
-                        )}
-                        {order?.status === 'issued' && isAccepted && (
-                          <button
-                            type="button"
-                            onClick={() => handleFulfill(index, 'returned')}
-                            className="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white hover:shadow-lg hover:shadow-red-500/30 hover:scale-105 active:scale-95"
-                          >
-                            <RotateCcw className="w-4 h-4" />
-                            Вернуть
-                          </button>
-                        )}
-                        {isPending && (
-                          <span className="text-sm text-gray-400 py-2.5">Не поступил</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="font-bold text-2xl flex items-center">
-                      {(() => {
-                        const hasDiscount = item.product.discount && item.product.discount > 0 &&
-                          (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
-                        const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
-                        return (
-                          <span className={item.fulfillmentStatus === 'returned' ? 'line-through text-gray-400' : 'text-[#2D3436]'}>
-                            {price * item.quantity} ₽
-                            {hasDiscount && <span className="text-xs ml-1 text-green-600">(-{item.product.discount}%)</span>}
-                          </span>
-                        );
-                      })()}
-                    </div>
                   </div>
-                );
-              })}
+
+                  <div className="font-bold text-2xl flex items-center">
+                    {(() => {
+                      const hasDiscount = item.product.discount && item.product.discount > 0 && 
+                        (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
+                      const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
+                      return (
+                        <span className={item.fulfillmentStatus === 'returned' ? 'line-through text-gray-400' : 'text-[#2D3436]'}>
+                          {price * item.quantity} ₽
+                          {hasDiscount && <span className="text-xs ml-1 text-green-600">(-{item.product.discount}%)</span>}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -288,7 +290,7 @@ export default function POS() {
       <div className="w-96 bg-gradient-to-br from-[#2D3436] to-[#1a1f21] text-white rounded-[2rem] p-8 flex flex-col shadow-2xl shadow-[#2D3436]/30 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-green-500/10 rounded-full translate-y-1/2 -translate-x-1/2" />
-
+        
         <h3 className="text-xl font-bold mb-8 flex items-center gap-3 text-gray-200 relative z-10">
           <Banknote className="w-6 h-6 text-green-400" />
           Оплата наличными

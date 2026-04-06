@@ -197,14 +197,14 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="space-y-2 mb-4">
+            <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
               {order.items.map((item, idx) => {
                 const hasDiscount = item.product.discount && item.product.discount > 0 && 
                   (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
                 const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
                 const isAccepted = item.fulfillmentStatus === 'accepted';
                 return (
-                <div key={idx} className={`flex gap-2 items-center p-2 rounded-lg ${isAccepted ? 'bg-green-50' : 'bg-gray-50'}`}>
+                <div key={idx} className={`flex gap-2 items-center p-2 rounded-lg ${isAccepted ? 'bg-green-50' : 'bg-gray-50 opacity-60'}`}>
                   <button
                     onClick={() => updateOrderItemFulfillment(order.id, idx, isAccepted ? 'returned' : 'accepted')}
                     className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
@@ -215,11 +215,14 @@ export default function Dashboard() {
                   >
                     <Check className="w-3 h-3" />
                   </button>
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden shrink-0 border">
+                    {item.product.image && (
+                      <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-xs truncate">{item.product.name}</p>
-                  </div>
-                  <div className="text-xs font-medium text-gray-500">
-                    {item.quantity}×{price}
+                    <p className="text-xs text-gray-400">{item.quantity} шт. × {price} ₽</p>
                   </div>
                 </div>
                 );
@@ -245,10 +248,17 @@ export default function Dashboard() {
 
             {order.status === 'in_transit' && (
               <button
-                onClick={() => updateOrderStatus(order.id, 'arrived')}
+                onClick={() => {
+                  order.items.forEach((_, idx) => {
+                    if (order.items[idx].fulfillmentStatus !== 'accepted') {
+                      updateOrderItemFulfillment(order.id, idx, 'accepted');
+                    }
+                  });
+                  updateOrderStatus(order.id, 'arrived');
+                }}
                 className="w-full py-3 rounded-xl font-bold bg-blue-500 text-white hover:bg-blue-600 transition-colors"
               >
-                Принять
+                Принять все
               </button>
             )}
           </div>
