@@ -187,7 +187,7 @@ export default function Dashboard() {
           <div key={order.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-[#F0F0F0] flex flex-col hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <span className="text-xs text-gray-400 font-medium block">Заказ {order.code}</span>
+                <span className="text-3xl font-black tracking-widest">{order.code}</span>
                 <p className="text-xs text-gray-400">{new Date(order.createdAt).toLocaleString('ru-RU')}</p>
               </div>
               <div className={`p-2 rounded-full ${
@@ -202,23 +202,8 @@ export default function Dashboard() {
                 const hasDiscount = item.product.discount && item.product.discount > 0 && 
                   (!item.product.discountEndDate || item.product.discountEndDate > Date.now());
                 const price = hasDiscount ? Math.round(item.product.price * (1 - item.product.discount / 100)) : item.product.price;
-                const isAccepted = item.fulfillmentStatus === 'accepted';
                 return (
-                <div key={idx} className={`flex gap-2 items-center p-2 rounded-lg ${isAccepted ? 'bg-green-50' : 'bg-gray-50'}`}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newStatus = isAccepted ? undefined : 'accepted';
-                      updateOrderItemFulfillment(order.id, idx, newStatus);
-                    }}
-                    className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                      isAccepted 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-gray-200 text-gray-400 hover:bg-gray-300'
-                    }`}
-                  >
-                    <Check className="w-3 h-3" />
-                  </button>
+                <div key={idx} className="flex gap-2 items-center p-2 rounded-lg bg-gray-50">
                   <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden shrink-0 border">
                     {item.product.image && (
                       <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
@@ -229,8 +214,8 @@ export default function Dashboard() {
                     <p className="text-xs text-gray-400">{item.quantity} шт. × {price} ₽</p>
                   </div>
                 </div>
-                );
-              })}
+              );
+            })}
             </div>
 
             <div className="mt-auto">

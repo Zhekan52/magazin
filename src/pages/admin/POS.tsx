@@ -160,10 +160,6 @@ export default function POS() {
           <div className="bg-white rounded-[2rem] p-8 border border-[#F0F0F0] shadow-lg shadow-gray-200/50 flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between mb-6 pb-6 border-b-2 border-dashed border-[#E8E8E8]">
               <div>
-                <span className="text-sm text-gray-500 font-medium uppercase tracking-wider block mb-1 flex items-center gap-2">
-                  <Package className="w-4 h-4" />
-                  Заказ #{activeOrder.id.toUpperCase()}
-                </span>
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-[#2D3436] to-[#1a1f21] bg-clip-text text-transparent">Сборка заказа</h2>
                 {order?.issuedAt && (
                   <p className="text-sm text-green-600 mt-2 flex items-center gap-2 bg-green-50 px-3 py-1 rounded-lg w-fit">
