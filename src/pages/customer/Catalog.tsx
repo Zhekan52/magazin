@@ -191,7 +191,17 @@ export default function Catalog() {
               )}
               <div className="flex items-center justify-between mt-auto">
                 <div className="flex flex-col">
-                  <span className="font-bold text-2xl text-[#2D3436]">{product.price} ₽</span>
+                  {(product.discount && product.discount > 0 && (!product.discountEndDate || product.discountEndDate > Date.now())) ? (
+                    <>
+                      <span className="font-bold text-2xl text-[#2D3436]">{getDiscountedPrice(product)} ₽</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-400 line-through">{product.price} ₽</span>
+                        <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">-{product.discount}%</span>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="font-bold text-2xl text-[#2D3436]">{product.price} ₽</span>
+                  )}
                 </div>
                 <button
                   onClick={() => !storeClosed && addToCart(product, selectedSizes[product.id])}
@@ -242,10 +252,10 @@ export default function Catalog() {
                     <div className="w-full h-full bg-gray-100 flex items-center justify-center text-2xl">📦</div>
                   )}
                 </div>
-                <div className="flex-1 flex flex-col justify-between min-w-0">
+                <div className="flex-1 flex flex-col justify-between min-w-0 overflow-hidden">
                   <div className="flex justify-between gap-2 items-start">
-                    <div>
-                      <h4 className="font-semibold text-[#1a1a1a] truncate">{item.product.name}</h4>
+                    <div className="min-w-0">
+                      <h4 className="font-semibold text-[#1a1a1a] line-clamp-2">{item.product.name}</h4>
                       {item.selectedSize && (
                         <span className="inline-block bg-[#2D3436]/10 text-[#2D3436] text-xs font-bold px-2 py-1 rounded-lg mt-1">
                           Размер: {item.selectedSize}
